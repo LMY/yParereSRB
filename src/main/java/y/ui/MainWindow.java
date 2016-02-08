@@ -9,8 +9,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,7 +109,7 @@ public class MainWindow extends JFrame {
 		substTable = new JHashTable();
 		
 		go2Button = new JButton("Write");
-		goButton.addActionListener(new ActionListener() {
+		go2Button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				writeResult();
@@ -133,8 +134,8 @@ public class MainWindow extends JFrame {
 	private void enablePanels() {
 		Utils.enableComponents(phase0panel, current_project == null);
 		
-		Utils.enableComponents(substTable, current_project != null);
-		Utils.enableComponents(go2Button, current_project != null);
+		substTable.setEnabled(current_project != null);
+		go2Button.setEnabled(current_project != null);
 	}
 	
 	
@@ -148,7 +149,11 @@ public class MainWindow extends JFrame {
 			final Set<String> fields = getTemplateFields(hdoc);
 			
 			// read project
-			current_project = ProjectExporterProvider.importProject(yemFile.getText());
+			final String yemFilename = yemFile.getText();
+			if (yemFilename == null || yemFilename.isEmpty())
+				throw new Exception("yEM filename is empty");
+			
+			current_project = ProjectExporterProvider.importProject(yemFilename);
 			if (current_project == null || current_project.getSites() == null || current_project.getSites().length == 0)
 				throw new Exception("Empty project");
 		
@@ -164,12 +169,15 @@ public class MainWindow extends JFrame {
 	}
 
 	private Map<String, String> fillInDefaults(Set<String> fields) {
-		final Map<String, String> map = new HashMap<String, String>();
+		final Map<String, String> map = new LinkedHashMap<String, String>();	// preserve az order of keys
 		
 		final String today = Utils.getTodayDate();
 		final String this_year = Utils.getTodayYear();
 		
-		for (final String s : fields)
+		final String[] aFields =  fields.toArray(new String[fields.size()]);
+		Arrays.sort(aFields);
+		
+		for (final String s : aFields)
 		 switch (s) {
 			 case "$ANNO" : map.put(s, this_year); break;
 			 
