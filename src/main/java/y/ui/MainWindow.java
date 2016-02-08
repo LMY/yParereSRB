@@ -35,6 +35,7 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 import y.yParereSRB;
 import y.em.Project;
+import y.em.Site;
 import y.exporters.ProjectExporterProvider;
 import y.utils.LastUsedFolder;
 import y.utils.Utils;
@@ -177,21 +178,80 @@ public class MainWindow extends JFrame {
 		final String[] aFields =  fields.toArray(new String[fields.size()]);
 		Arrays.sort(aFields);
 		
+		final Site site = current_project.getFirstSite();
+		
+		
 		for (final String s : aFields)
-		 switch (s) {
-			 case "$ANNO" : map.put(s, this_year); break;
-			 
-			 case "$TODAY" :
-			 case "$DATARELAZIONE" :
-			 case "$DATE" : map.put(s, today); break;
-				
-				
-			default: map.put(s, "");
-		}
+			try {
+				if (s.equals("$ANNO")) 
+					map.put(s, this_year);
+				else if (s.equals("$TODAY") || s.equals("$DATARELAZIONE") || s.equals("$DATE"))
+					map.put(s, today);
+				else if (s.equals("$COMUNE")) 
+					map.put(s, site.getDbinfo().getComune());
+				else if (s.equals("$GESTORE")) 
+					map.put(s, site.getDbinfo().getOperatore());
+				else if (s.equals("$INDIRIZZO")) 
+					map.put(s, site.getDbinfo().getIndirizzo());
+				else if (s.equals("$PROTOCOLLO.NUMERO")) 
+					map.put(s, site.getDbinfo().getProto_in());
+				else if (s.equals("$PROTOCOLLO.DATA") || s.equals("$PROTOCOLLO.DATAIN")) 
+					map.put(s, adjustDate(site.getDbinfo().getData_proto_in()));
+				else if (s.equals("$PROTOCOLLO.DATAOUT")) 
+					map.put(s, adjustDate(site.getDbinfo().getData_proto_out()));
+				else if (s.equals("$SITO.ID")) 
+					map.put(s, site.getID());
+				else if (s.equals("$SITO.NOME") || s.equals("$SITO.NAME")) {
+					if (site.getDbinfo().getCodiceSito() != null && !site.getDbinfo().getCodiceSito().isEmpty())
+						map.put(s, site.getDbinfo().getCodiceSito());
+					else {
+						final String[] parts = site.getDbinfo().getNote().split(REGEXP_SPACES_AND_STUFF);
+						map.put(s, parts.length > 0 ? parts[0] : "");
+					}
+				}
+				else if (s.equals("$SITO.X")) 
+					map.put(s, Utils.formatDouble(site.getPosition().getX(), 1));
+				else if (s.equals("$SITO.Y")) 
+					map.put(s, Utils.formatDouble(site.getPosition().getY(), 1));
+				else if (s.equals("$SITO.Z")) 
+					map.put(s, Utils.formatDouble(site.getPosition().getZ(), 2));
+				else if (s.equals("$RICONFIGURA.ID")) {
+					final String[] parts = site.getDbinfo().getNote().split(REGEXP_SPACES_AND_STUFF);
+					
+					boolean found = false;
+					
+					for (int i=0; i<parts.length-1; i++)
+						if (parts[i].equalsIgnoreCase("riconfigura")) {
+							found = true;
+							map.put(s, i<parts.length-2 && parts[i+1].equalsIgnoreCase("id") ? parts[i+2] : parts[i+1]);
+						}
+					
+					if (!found)
+						map.put(s, "");
+				}
+			
+				else
+					map.put(s, "");
+			}
+			catch (Exception e) {
+				map.put(s, "");
+			}
 		
 		return map;
 	}
 
+	private String adjustDate(String data_proto_out) {
+		try {
+			final String r = data_proto_out.replaceFirst("00:00:00.0", "").trim();
+			return r.substring(8, 10) + "." + r.substring(5, 7) + "." + r.substring(0, 4);
+		}
+		catch (Exception e) {
+			return data_proto_out;
+		}
+	}
+
+	public final static String REGEXP_SPACES_AND_STUFF = "[\\s,)(]"; //"[\\s,\\(\\)\\.]";
+	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();
 
@@ -235,7 +295,7 @@ public class MainWindow extends JFrame {
 				if (text == null || text.isEmpty())
 					continue;
 				
-				final String[] parts = text.split("\\s");
+				final String[] parts = text.split(REGEXP_SPACES_AND_STUFF);
 				for (String word : parts)
 					if (word.startsWith("$"))
 						ret.add(word);
