@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -664,4 +666,47 @@ public class Utils
             }
         }
     }
+    
+	public static String saveFileDialog(String dialog_title, Component component, String description, String... extensions)
+	{
+		return openFileDialog(dialog_title, component, description, extensions);
+	}
+
+	public static String openFileDialog(String dialog_title, Component component, String description, String... extensions)
+	{
+		return openFileDialog(LastUsedFolder.getInstance().get(), dialog_title, component, description, extensions);
+	}
+	
+	public static String openFileDialog(String lastUsedFolder, String dialog_title, Component component, String description, String... extensions)
+	{
+		final JFileChooser chooser = new JFileChooser(lastUsedFolder);
+		chooser.setDialogTitle(dialog_title);
+		final FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extensions);
+		chooser.setFileFilter(filter);
+		
+		if (chooser.showOpenDialog(component) == JFileChooser.APPROVE_OPTION) {
+			LastUsedFolder.getInstance().set(chooser.getSelectedFile().getParent());
+			return chooser.getSelectedFile().getAbsolutePath();
+		}
+
+		return  "";
+	}
+	
+	public static String getTodayDate() {
+		try {
+			return new SimpleDateFormat("dd.MM.yyyy").format(Calendar.getInstance().getTime());
+		}
+		catch (Exception e) {
+			return "";
+		}
+	}
+	
+	public static String getTodayYear() {
+		try {
+			return new SimpleDateFormat("yyyy").format(Calendar.getInstance().getTime());
+		}
+		catch (Exception e) {
+			return "";
+		}
+	}
 }

@@ -12,12 +12,14 @@ import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -51,6 +53,9 @@ public class MainWindow extends JFrame {
 	private JTextField yemFile;
 	
 	private JPanel phase0panel;
+	
+	private JHashTable substTable;
+	private JButton go2Button;
 	
 	private Project current_project = null;
 	private XWPFDocument hdoc = null;
@@ -100,7 +105,20 @@ public class MainWindow extends JFrame {
 		phase0panel.add(goButton, BorderLayout.SOUTH);
 		
 		
+		substTable = new JHashTable();
+		
+		go2Button = new JButton("Write");
+		goButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				writeResult();
+				enablePanels();
+			}
+		});
+		
 		this.add(phase0panel, BorderLayout.NORTH);
+		this.add(new JScrollPane(substTable), BorderLayout.CENTER);
+		this.add(go2Button, BorderLayout.SOUTH);
 		
 		enablePanels();
 		
@@ -114,6 +132,9 @@ public class MainWindow extends JFrame {
 	
 	private void enablePanels() {
 		Utils.enableComponents(phase0panel, current_project == null);
+		
+		Utils.enableComponents(substTable, current_project != null);
+		Utils.enableComponents(go2Button, current_project != null);
 	}
 	
 	
@@ -131,6 +152,8 @@ public class MainWindow extends JFrame {
 			if (current_project == null || current_project.getSites() == null || current_project.getSites().length == 0)
 				throw new Exception("Empty project");
 		
+			substTable.update(fillInDefaults(fields));
+			
 			return true;
 		}
 		catch (Exception e) {
@@ -138,6 +161,27 @@ public class MainWindow extends JFrame {
 			Utils.MessageBox("Error reading project:\n"+e.toString(), "ERROR");
 			return false;
 		}
+	}
+
+	private Map<String, String> fillInDefaults(Set<String> fields) {
+		final Map<String, String> map = new HashMap<String, String>();
+		
+		final String today = Utils.getTodayDate();
+		final String this_year = Utils.getTodayYear();
+		
+		for (final String s : fields)
+		 switch (s) {
+			 case "$ANNO" : map.put(s, this_year); break;
+			 
+			 case "$TODAY" :
+			 case "$DATARELAZIONE" :
+			 case "$DATE" : map.put(s, today); break;
+				
+				
+			default: map.put(s, "");
+		}
+		
+		return map;
 	}
 
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
@@ -196,43 +240,42 @@ public class MainWindow extends JFrame {
 	
 	// phase 2
 	
-	private static boolean writeResult(XWPFDocument hdoc, HashMap<String, String> subst, String outfilename) {
+	private boolean writeResult() {
+		final String outfilename = Utils.saveFileDialog("Select file", this, "MS-Office docx", "docx");
+		if (outfilename != null && !outfilename.isEmpty() && doWriteResult(hdoc, substTable.getMap(), outfilename)) {
+			
+			Utils.MessageBox("Done!", "OK");
+			
+			this.current_project = null;
+			this.hdoc = null;
+			
+			return true;
+		}
+		else
+			return false;
+	}
 		
+	private static boolean doWriteResult(XWPFDocument hdoc, Map<String, String> subst, String filename) {		
 		replace(hdoc.getParagraphs(), subst);
 
-		for (XWPFTable tbl : hdoc.getTables()) {
-			if (tbl == null)
-				continue;
-			
-			for (XWPFTableRow row : tbl.getRows()) {
-				if (row == null)
-					continue;
-				
-				for (XWPFTableCell cell : row.getTableCells()) {
-					if (cell == null)
-						continue;
-					
-					replace(cell.getParagraphs(), subst);
-				}
-			}
-		}
+		for (XWPFTable tbl : hdoc.getTables())
+			if (tbl != null)
+				for (XWPFTableRow row : tbl.getRows())
+					if (row != null)
+						for (XWPFTableCell cell : row.getTableCells())
+							if (cell != null)
+								replace(cell.getParagraphs(), subst);
 		
-		for (XWPFFooter footer : hdoc.getFooterList()) {
-			if (footer == null)
-				continue;
-			
-			replace(footer.getParagraphs(), subst);
-		}
+		for (XWPFFooter footer : hdoc.getFooterList())
+			if (footer != null)
+				replace(footer.getParagraphs(), subst);
 		
-		for (XWPFHeader header : hdoc.getHeaderList()) {
-			if (header == null)
-				continue;
-			
-			replace(header.getParagraphs(), subst);
-		}
+		for (XWPFHeader header : hdoc.getHeaderList())
+			if (header != null)
+				replace(header.getParagraphs(), subst);
 		
 		try {
-			hdoc.write(new FileOutputStream(outfilename));
+			hdoc.write(new FileOutputStream(filename));
 			return true;
 		}
 		catch (Exception e) {
@@ -241,7 +284,7 @@ public class MainWindow extends JFrame {
 		}
 	}
 	
-	private static void replace(List<XWPFParagraph> paragraphs, HashMap<String, String> subst) {
+	private static void replace(List<XWPFParagraph> paragraphs, Map<String, String> subst) {
 		for (XWPFParagraph p : paragraphs) {
 			if (p == null)
 				continue;
