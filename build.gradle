@@ -1,0 +1,68 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+
+mainClassName = "y.yParereSRB"
+version = '0.01-build' + getDate()
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+def getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyMMdd')
+    return formattedDate
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile 'org.apache.poi:poi:3.11'
+	compile 'org.apache.poi:poi-ooxml:3.11'
+}
+
+
+task fatJar(type: Jar) {
+	manifest {
+        attributes 'Implementation-Title': 'yParereSRB',
+                   'Implementation-Version': version,
+					'Class-Path': configurations.compile.collect { "libs/"+it.getName() }.join(' '),
+                   'Main-Class': 'y.yParereSRB'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar    
+}
+
+task copyLibs(type: Copy) {
+    into "$buildDir/libs/libs"
+    from configurations.runtime
+}
+
+task copyDocs(type: Copy) {
+    include "LICENSE.txt"
+    into "${buildDir}/libs/"
+    from "$projectDir"
+}
+
+jar {
+	dependsOn copyLibs
+	dependsOn copyDocs
+	manifest {
+        attributes 'Implementation-Title': 'yParereSRB',
+                   'Implementation-Version': version,
+                   'Class-Path': configurations.compile.collect { "libs/"+it.getName() }.join(' '),                   
+                   'Main-Class': 'y.yParereSRB'
+    }
+}
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
