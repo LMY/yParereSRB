@@ -187,14 +187,14 @@ public class MainWindow extends JFrame {
 					map.put(s, this_year);
 				else if (s.equals("$TODAY") || s.equals("$DATARELAZIONE") || s.equals("$DATE"))
 					map.put(s, today);
-				else if (s.equals("$COMUNE")) 
+				else if (s.equals("$COMUNE.NOME")) 
 					map.put(s, site.getDbinfo().getComune());
-				else if (s.equals("$GESTORE")) 
+				else if (s.equals("$GESTORE.NOME")) 
 					map.put(s, site.getDbinfo().getOperatore());
-				else if (s.equals("$INDIRIZZO")) 
-					map.put(s, site.getDbinfo().getIndirizzo());
+				else if (s.equals("$INDIRIZZO.INDIRIZZO")) 
+					map.put(s, Utils.capitalize(site.getDbinfo().getIndirizzo()));
 				else if (s.equals("$PROTOCOLLO.NUMERO")) 
-					map.put(s, site.getDbinfo().getProto_in());
+					map.put(s, site.getDbinfo().getProto_in().replace("[Aa\\/]", ""));
 				else if (s.equals("$PROTOCOLLO.DATA") || s.equals("$PROTOCOLLO.DATAIN")) 
 					map.put(s, adjustDate(site.getDbinfo().getData_proto_in()));
 				else if (s.equals("$PROTOCOLLO.DATAOUT")) 
@@ -250,7 +250,7 @@ public class MainWindow extends JFrame {
 		}
 	}
 
-	public final static String REGEXP_SPACES_AND_STUFF = "[\\s,)(]"; //"[\\s,\\(\\)\\.]";
+	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,]+";
 	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();

@@ -709,4 +709,24 @@ public class Utils
 			return "";
 		}
 	}
+	
+	public static String capitalizeWord(String word) {
+		if (word.length() < 2)
+			return word.toUpperCase();
+		
+		return Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase();
+	}
+	
+	public static String capitalize(String line) {
+		final String[] parts = line.split("\\s");
+		final StringBuilder sb = new StringBuilder();
+		
+		for (int i=0; i<parts.length; i++) {
+			sb.append(capitalizeWord(parts[i]));
+			if (i != parts.length-1)
+				sb.append(' ');
+		}
+		
+		return sb.toString();
+	}
 }
