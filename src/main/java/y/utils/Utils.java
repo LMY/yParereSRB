@@ -1,6 +1,8 @@
 package y.utils;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -8,6 +10,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,17 +31,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.AbstractAction;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+
+import y.utils.LastUsedFolder;
 
 
 public class Utils
@@ -597,4 +606,62 @@ public class Utils
 		
 		return "";
 	}
+	
+	
+	public static JPanel createOpenDirectoryTextField(final Component window, final JTextField textedit, final String dialog_title)
+	{
+		final JPanel jp = new JPanel();
+		jp.setLayout(new BorderLayout());
+		final JButton btn = new JButton("...");
+		btn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				final JFileChooser chooser = new JFileChooser(LastUsedFolder.getInstance().get());
+				chooser.setDialogTitle(dialog_title);
+			    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			    chooser.setAcceptAllFileFilterUsed(false);
+
+				if (chooser.showOpenDialog(window) == JFileChooser.APPROVE_OPTION)
+					textedit.setText(chooser.getSelectedFile().getAbsolutePath());
+			}
+		});
+		
+		jp.add(textedit, BorderLayout.CENTER);
+		jp.add(btn, BorderLayout.EAST);
+		
+		return jp;
+	}
+	
+	public static JPanel createOpenFileTextField(final Component window, final JTextField textedit, final String desc, final String extension)
+	{
+		final JPanel jp = new JPanel();
+		jp.setLayout(new BorderLayout());
+		final JButton btn = new JButton("...");
+		btn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				final JFileChooser chooser = new JFileChooser(LastUsedFolder.getInstance().get());
+				final FileNameExtensionFilter filter = new FileNameExtensionFilter(desc, extension);
+				chooser.setFileFilter(filter);
+
+				if (chooser.showOpenDialog(window) == JFileChooser.APPROVE_OPTION)
+					textedit.setText(chooser.getSelectedFile().getAbsolutePath());
+			}
+		});
+		
+		jp.add(textedit, BorderLayout.CENTER);
+		jp.add(btn, BorderLayout.EAST);
+		
+		return jp;
+	}
+	
+    public static void enableComponents(Container container, boolean enable) {
+        final Component[] components = container.getComponents();
+        for (Component component : components) {
+            component.setEnabled(enable);
+            if (component instanceof Container) {
+                enableComponents((Container)component, enable);
+            }
+        }
+    }
 }
