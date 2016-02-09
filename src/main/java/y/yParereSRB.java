@@ -6,6 +6,8 @@ import java.util.Locale;
 import javax.swing.UIManager;
 
 import y.ui.MainWindow;
+import y.utils.GeneralProperties;
+import y.utils.GeneralPropertiesExporter;
 import y.utils.Utils;
 
 public class yParereSRB {
@@ -13,7 +15,12 @@ public class yParereSRB {
 	public static final String VersionString = "0.01"; 
 	public static final String VersionDateString = VersionString + " (" + ReleaseDate + ")"; 
 	
+	public static final String CONFIG_FILENAME = "yParereSRB.xml";
+	public static final String ADDRESSES_FILENAME = "addresses.xml";
+	
+	
 	public static void main(String[] args) {
+		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		}
@@ -25,8 +32,15 @@ public class yParereSRB {
 		NumberFormat.getInstance(Locale.US).setGroupingUsed(false);
 		
 //		final Config config = Config.read();
+		GeneralProperties<String> config = null;
+		try {
+			config = GeneralPropertiesExporter.read(CONFIG_FILENAME, p -> { return p; });
+		} catch (Exception e) {
+			Utils.MessageBox(CONFIG_FILENAME+" doesn't exist", "WARNING");
+		}
 		
-		final MainWindow main = new MainWindow();
+		
+		final MainWindow main = new MainWindow(config);
 		main.setVisible(true);
 	}
 }

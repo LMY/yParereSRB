@@ -7,8 +7,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,6 +39,7 @@ import y.yParereSRB;
 import y.em.Project;
 import y.em.Site;
 import y.exporters.ProjectExporterProvider;
+import y.utils.GeneralProperties;
 import y.utils.LastUsedFolder;
 import y.utils.Utils;
 
@@ -61,9 +64,12 @@ public class MainWindow extends JFrame {
 	
 	private Project current_project = null;
 	private XWPFDocument hdoc = null;
+	private GeneralProperties<String> config;
 	
-	public MainWindow() {
+	public MainWindow(GeneralProperties<String> config) {
 		super("yPareriSRB - "+yParereSRB.VersionString);
+		
+		this.config = config;
 		
 		LastUsedFolder.init(".");
 
@@ -183,9 +189,11 @@ public class MainWindow extends JFrame {
 		
 		for (final String s : aFields)
 			try {
-				if (s.equals("$ANNO")) 
+				if (s.equals("$A.ANNO")) 
 					map.put(s, this_year);
-				else if (s.equals("$TODAY") || s.equals("$DATARELAZIONE") || s.equals("$DATE"))
+				else if (s.equals("$A.BREVEANNO")) 
+					map.put(s, this_year.substring(2));
+				else if (s.equals("$A.DATA") || s.equals("$TODAY") || s.equals("$DATE"))
 					map.put(s, today);
 				else if (s.equals("$COMUNE.NOME")) 
 					map.put(s, site.getDbinfo().getComune());
@@ -194,7 +202,7 @@ public class MainWindow extends JFrame {
 				else if (s.equals("$INDIRIZZO.INDIRIZZO")) 
 					map.put(s, Utils.capitalize(site.getDbinfo().getIndirizzo()));
 				else if (s.equals("$PROTOCOLLO.NUMERO")) 
-					map.put(s, site.getDbinfo().getProto_in().replace("[Aa\\/]", ""));
+					map.put(s, site.getDbinfo().getProto_in().replaceAll("[Aa\\/]", ""));
 				else if (s.equals("$PROTOCOLLO.DATA") || s.equals("$PROTOCOLLO.DATAIN")) 
 					map.put(s, adjustDate(site.getDbinfo().getData_proto_in()));
 				else if (s.equals("$PROTOCOLLO.DATAOUT")) 
@@ -229,9 +237,20 @@ public class MainWindow extends JFrame {
 					if (!found)
 						map.put(s, "");
 				}
+				else if (s.startsWith("$PIC.")) {
+					final String[] parts = s.split("\\.");
+					map.put(s, getPic(parts[1]));
+				}
+				else if (s.startsWith("$TABELLA.")) {
+					final String[] parts = s.split("\\.");
+					map.put(s, getTable(parts[1]));
+				}
 			
-				else
-					map.put(s, "");
+				else {
+					// get from conf, if present
+					final String config_value = config.get(String.class, s);
+					map.put(s, Utils.IsNullOrEmpty(config_value) ? "" : config_value);
+				}
 			}
 			catch (Exception e) {
 				map.put(s, "");
@@ -239,7 +258,79 @@ public class MainWindow extends JFrame {
 		
 		return map;
 	}
-
+	
+	
+	private static List<String> getFilesOfType(String dirname, String[] valid_exts) {
+		final File dir = new File(dirname);
+		final String[] names = dir.list();
+		
+		final List<String> ret = new ArrayList<String>();
+		
+		for (String s : names) {
+			final String ext = Utils.getFileExtension(s);
+			
+			for (String e : valid_exts)
+				if (ext.equalsIgnoreCase(e))
+					ret.add(dirname + s);
+		}
+	
+		return ret;
+	}
+	
+	private static String[] EXTENSIONS_PIC = { "jpg", "jpeg", "png" };
+	private static String[] EXTENSIONS_TABLE = { "xlsx", "xls" };
+	
+	private String getPic(String name) {
+		final List<String> pics = getFilesOfType(Utils.getFolderOfFile(yemFile.getText()) + File.separator, EXTENSIONS_PIC);
+		
+		for (String s : pics) {
+			final String lowS = Utils.getFilenameOfFile(s).toLowerCase();
+			
+			if (name.equals("VA")) {
+				if (lowS.contains("va") || lowS.contains("volume"))
+					return s;
+			}
+			else if (name.equals("MISURE")) {
+				if (lowS.contains("mis"))
+					return s;
+			}
+			else if (name.equals("CAMPO15")) {
+				if (lowS.contains("campo1.5") || lowS.contains("campo15") || lowS.contains("c15") || lowS.contains("c1.5"))
+					return s;
+			}
+			else if (name.equals("CAMPO6")) {
+				if (lowS.contains("campo6") || lowS.contains("c6"))
+					return s;
+			}
+		}
+		
+		return "";
+	}
+	
+	private String getTable(String name) {
+		final List<String> tables = getFilesOfType(Utils.getFolderOfFile(yemFile.getText()) + File.separator, EXTENSIONS_TABLE);
+		
+		for (String s : tables) {
+			final String lowS = Utils.getFilenameOfFile(s).toLowerCase();
+			
+			if (name.equals("PREESISTENTI")) {
+				if (lowS.contains("prees"))
+					return s;
+			}
+			else if (name.equals("MISURE")) {
+				if (lowS.contains("measure"))
+					return s;
+			}
+			else if (name.equals("RADIOELETTRICA")) {
+				if (lowS.contains("radioel"))
+					return s;
+			}
+		}
+		
+		return "";
+	}
+	
+	
 	private String adjustDate(String data_proto_out) {
 		try {
 			final String r = data_proto_out.replaceFirst("00:00:00.0", "").trim();

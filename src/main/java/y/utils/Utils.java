@@ -313,6 +313,12 @@ public class Utils
 		catch (Exception e) { return ""; }
 	}
 	
+	public static String getFilenameOfFile(String filename)
+	{
+		try { return new File(filename).getName(); }
+		catch (Exception e) { return ""; }
+	}
+	
 	public static String formatDouble(double value, int numdec)
 	{
 		if (value < 0) return "-" + formatDouble(-value, numdec);
@@ -728,5 +734,9 @@ public class Utils
 		}
 		
 		return sb.toString();
+	}
+	
+	public static boolean IsNullOrEmpty(String s) {
+		return s == null || s.isEmpty();
 	}
 }
