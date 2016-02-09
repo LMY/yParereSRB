@@ -29,11 +29,11 @@ public class AddressBook {
 	}
 	
 	public String getEmail(String address) {
-		return emails.get(address);
+		return emails.get(address.toLowerCase());
 	}
 
 	public String getPhysicalAddress(String address) {
-		return physical.get(address);
+		return physical.get(address.toLowerCase());
 	}
 
 	public void add(String name, String email) {
@@ -104,10 +104,10 @@ public class AddressBook {
 					continue;
 				
 				if (!Utils.IsNullOrEmpty(address))
-					book.emails.put(name, address);
+					book.emails.put(name.toLowerCase(), address);
 				
 				if (!Utils.IsNullOrEmpty(physical))
-					book.physical.put(name, physical);
+					book.physical.put(name.toLowerCase(), physical);
 			}
 		}
 		

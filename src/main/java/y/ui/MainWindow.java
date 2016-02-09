@@ -182,6 +182,10 @@ public class MainWindow extends JFrame {
 		}
 	}
 
+	
+	
+
+	
 	private Map<String, String> fillInDefaults(Set<String> fields) {
 		final Map<String, String> map = new LinkedHashMap<String, String>();	// preserve az order of keys
 		
@@ -193,7 +197,6 @@ public class MainWindow extends JFrame {
 		
 		final Site site = current_project.getFirstSite();
 		
-		
 		for (final String s : aFields)
 			try {
 				if (s.equals("$A.ANNO")) 
@@ -202,10 +205,21 @@ public class MainWindow extends JFrame {
 					map.put(s, this_year.substring(2));
 				else if (s.equals("$A.DATA") || s.equals("$TODAY") || s.equals("$DATE"))
 					map.put(s, today);
-				else if (s.equals("$COMUNE.NOME")) 
-					map.put(s, site.getDbinfo().getComune());
-				else if (s.equals("$GESTORE.NOME")) 
-					map.put(s, site.getDbinfo().getOperatore());
+				else if (s.equals("$COMUNE.NOME")) {
+					final String mem_comune = site.getDbinfo().getComune();
+					map.put(s, mem_comune);
+					map.put("$COMUNE.EMAIL", book.getEmail(mem_comune));
+				}
+				else if (s.equals("$GESTORE.NOME")) {
+					final String mem_gestore = site.getDbinfo().getOperatore();
+					map.put(s, mem_gestore);
+					map.put("$GESTORE.EMAIL", book.getEmail(mem_gestore));
+				}
+				else if (s.equals("$STUDIOTECNICO.NOME")) {
+					final String mem_gestore = "";
+					map.put(s, mem_gestore);
+					map.put("$STUDIOTECNICO.EMAIL", book.getEmail(mem_gestore));
+				}				
 				else if (s.equals("$INDIRIZZO.INDIRIZZO")) 
 					map.put(s, Utils.capitalize(site.getDbinfo().getIndirizzo()));
 				else if (s.equals("$PROTOCOLLO.NUMERO")) 
@@ -485,8 +499,9 @@ public class MainWindow extends JFrame {
 					continue;
 				
 				for (String key : subst.keySet())
-					if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key))
+					if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key)) {
 						text = text.replace(key, subst.get(key));
+					}
 				
 				r.setText(text, 0);
 			}
