@@ -25,7 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
-import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xwpf.usermodel.Document;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
@@ -39,6 +39,7 @@ import y.yParereSRB;
 import y.em.Project;
 import y.em.Site;
 import y.exporters.ProjectExporterProvider;
+import y.utils.CustomXWPFDocument;
 import y.utils.GeneralProperties;
 import y.utils.LastUsedFolder;
 import y.utils.Utils;
@@ -63,7 +64,7 @@ public class MainWindow extends JFrame {
 	private JButton go2Button;
 	
 	private Project current_project = null;
-	private XWPFDocument hdoc = null;
+	private CustomXWPFDocument wpf_document = null;
 	private GeneralProperties<String> config;
 	
 	public MainWindow(GeneralProperties<String> config) {
@@ -96,7 +97,7 @@ public class MainWindow extends JFrame {
 		phase0panelC.add(Utils.createOpenFileTextField(this, templateFile, "template file", "docx"));
 		
 		phase0panelC.add(new JLabel(" yEM Filename:"));
-		yemFile = new JTextField("");
+		yemFile = new JTextField("D:\\ARPA\\160127 Nimis-ViaMerano-VF_UD5297\\00prjVFserteco.yem");
 		phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
 		
 		
@@ -142,6 +143,9 @@ public class MainWindow extends JFrame {
 		Utils.enableComponents(phase0panel, current_project == null);
 		
 		substTable.setEnabled(current_project != null);
+		if (current_project == null)
+			substTable.clear();
+		
 		go2Button.setEnabled(current_project != null);
 	}
 	
@@ -152,8 +156,8 @@ public class MainWindow extends JFrame {
 	private boolean readTemplates() {
 		try {
 			// read template
-			hdoc = new XWPFDocument(OPCPackage.open(new FileInputStream(templateFile.getText())));
-			final Set<String> fields = getTemplateFields(hdoc);
+			wpf_document = new CustomXWPFDocument(new FileInputStream(templateFile.getText()));
+			final Set<String> fields = getTemplateFields(wpf_document);
 			
 			// read project
 			final String yemFilename = yemFile.getText();
@@ -400,22 +404,29 @@ public class MainWindow extends JFrame {
 	// phase 2
 	
 	private boolean writeResult() {
-		final String outfilename = Utils.saveFileDialog("Select file", this, "MS-Office docx", "docx");
-		if (outfilename != null && !outfilename.isEmpty() && doWriteResult(hdoc, substTable.getMap(), outfilename)) {
+		String outfilename = Utils.saveFileDialog("Select file", this, "MS-Office docx", "docx");
+		
+		if (outfilename != null && !outfilename.isEmpty()) {
+
+			// append ".docx" if user does not specify extension
+			if (!outfilename.toLowerCase().endsWith("doc") && !outfilename.toLowerCase().endsWith("docx"))
+				outfilename += ".docx";
 			
-			Utils.MessageBox("Done!", "OK");
-			
-			this.current_project = null;
-			this.hdoc = null;
-			
-			return true;
+			if (doWriteResult(wpf_document, substTable.getMap(), outfilename)) {
+				Utils.MessageBox("Done!", "OK");
+				
+				this.current_project = null;
+				this.wpf_document = null;
+				
+				return true;
+			}
 		}
-		else
-			return false;
+
+		return false;
 	}
 		
-	private static boolean doWriteResult(XWPFDocument hdoc, Map<String, String> subst, String filename) {		
-		replace(hdoc.getParagraphs(), subst);
+	private boolean doWriteResult(CustomXWPFDocument hdoc, Map<String, String> subst, String filename) {		
+		replace(hdoc, hdoc.getParagraphs(), subst);
 
 		for (XWPFTable tbl : hdoc.getTables())
 			if (tbl != null)
@@ -423,27 +434,36 @@ public class MainWindow extends JFrame {
 					if (row != null)
 						for (XWPFTableCell cell : row.getTableCells())
 							if (cell != null)
-								replace(cell.getParagraphs(), subst);
+								replace(hdoc, cell.getParagraphs(), subst);
 		
 		for (XWPFFooter footer : hdoc.getFooterList())
 			if (footer != null)
-				replace(footer.getParagraphs(), subst);
+				replace(hdoc, footer.getParagraphs(), subst);
 		
 		for (XWPFHeader header : hdoc.getHeaderList())
 			if (header != null)
-				replace(header.getParagraphs(), subst);
+				replace(hdoc, header.getParagraphs(), subst);
+		
+		FileOutputStream fo = null;
 		
 		try {
-			hdoc.write(new FileOutputStream(filename));
+			fo = new FileOutputStream(filename);
+			hdoc.write(fo);
+			fo.flush();
 			return true;
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+		finally {
+			if (fo != null)
+				try { fo.close(); }
+				catch (Exception e2) {}
+		}
 	}
 	
-	private static void replace(List<XWPFParagraph> paragraphs, Map<String, String> subst) {
+	private void replace(CustomXWPFDocument hdoc, List<XWPFParagraph> paragraphs, Map<String, String> subst) {
 		for (XWPFParagraph p : paragraphs) {
 			if (p == null)
 				continue;
@@ -452,6 +472,7 @@ public class MainWindow extends JFrame {
 		    if (runs == null)
 		    	continue;
 		    
+		    // NORMAL TEXT REPLACE
 			for (XWPFRun r : runs) {
 				if (r == null)
 					continue;
@@ -461,11 +482,87 @@ public class MainWindow extends JFrame {
 					continue;
 				
 				for (String key : subst.keySet())
-					if (text.contains(key))
+					if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key))
+						text = text.replace(key, subst.get(key));
+				
+				r.setText(text, 0);
+			}
+			
+			// PIC REPLACE
+			for (XWPFRun r : runs) {
+				if (r == null)
+					continue;
+				
+				String text = r.getText(0);
+				if (text == null || text.isEmpty())
+					continue;
+				
+				for (String key : subst.keySet())
+					if (key.startsWith("$PIC") && text.contains(key)) {
+						r.setText("", 0);
+						
+						FileInputStream is = null;
+						final String picFilename = subst.get(key);
+						try {
+							is = new FileInputStream(picFilename);
+							
+							// http://stackoverflow.com/questions/17745466/insert-picture-in-word-document
+							final int format = getPictureFormat(picFilename);
+							final String id = hdoc.addPictureData(is, format);
+							hdoc.createPicture(r, id, hdoc.getNextPicNameNumber(format),
+									config.get(Integer.class, "Image.width"), config.get(Integer.class, "Image.height"));
+							
+//							r.addPicture(is, format, picFilename,
+//									Units.toEMU((double) config.get(Integer.class, "Image.width")),
+//									Units.toEMU((double) config.get(Integer.class, "Image.height")));
+						}
+						catch (Exception e) {
+							Utils.MessageBox("Couldn't add pic:\n"+picFilename, "ERROR");
+						}
+						finally {
+							if (is != null)
+								try { is.close(); }
+								catch (Exception e2) {}
+						}
+						
+						break;
+					}
+			}
+			
+			// TABLE REPLACE
+			for (XWPFRun r : runs) {
+				if (r == null)
+					continue;
+				
+				String text = r.getText(0);
+				if (text == null || text.isEmpty())
+					continue;
+				
+				for (String key : subst.keySet())
+					if (key.startsWith("$TABELLA") && text.contains(key))
 						text = text.replace(key, subst.get(key));
 				
 				r.setText(text, 0);
 			}
 		}
+	}
+	
+	
+	public static int getPictureFormat(String imgFile) {
+		imgFile = imgFile.toLowerCase();
+		
+        if (imgFile.endsWith(".emf")) return XWPFDocument.PICTURE_TYPE_EMF;
+        else if(imgFile.endsWith(".wmf")) return XWPFDocument.PICTURE_TYPE_WMF;
+        else if(imgFile.endsWith(".pict")) return XWPFDocument.PICTURE_TYPE_PICT;
+        else if(imgFile.endsWith(".jpeg") || imgFile.endsWith(".jpg")) return XWPFDocument.PICTURE_TYPE_JPEG;
+        else if(imgFile.endsWith(".png")) return XWPFDocument.PICTURE_TYPE_PNG;
+        else if(imgFile.endsWith(".dib")) return XWPFDocument.PICTURE_TYPE_DIB;
+        else if(imgFile.endsWith(".gif")) return XWPFDocument.PICTURE_TYPE_GIF;
+        else if(imgFile.endsWith(".tiff")) return XWPFDocument.PICTURE_TYPE_TIFF;
+        else if(imgFile.endsWith(".eps")) return XWPFDocument.PICTURE_TYPE_EPS;
+        else if(imgFile.endsWith(".bmp")) return XWPFDocument.PICTURE_TYPE_BMP;
+        else if(imgFile.endsWith(".wpg")) return XWPFDocument.PICTURE_TYPE_WPG;
+        
+        return -1;
 	}
 }
