@@ -6,6 +6,7 @@ import java.util.Locale;
 import javax.swing.UIManager;
 
 import y.ui.MainWindow;
+import y.utils.AddressBook;
 import y.utils.GeneralProperties;
 import y.utils.GeneralPropertiesExporter;
 import y.utils.Utils;
@@ -39,8 +40,17 @@ public class yParereSRB {
 			Utils.MessageBox(CONFIG_FILENAME+" doesn't exist", "WARNING");
 		}
 		
+		AddressBook book;
+		try {
+			book = AddressBook.read();
+		}
+		catch (Exception e) {
+			Utils.MessageBox("AddressBook doesn't exist", "WARNING");
+			book = new AddressBook();
+		}
 		
-		final MainWindow main = new MainWindow(config);
+		
+		final MainWindow main = new MainWindow(config, book);
 		main.setVisible(true);
 	}
 }

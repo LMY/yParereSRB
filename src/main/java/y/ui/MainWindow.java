@@ -25,7 +25,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
-import org.apache.poi.xwpf.usermodel.Document;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
@@ -39,6 +38,7 @@ import y.yParereSRB;
 import y.em.Project;
 import y.em.Site;
 import y.exporters.ProjectExporterProvider;
+import y.utils.AddressBook;
 import y.utils.CustomXWPFDocument;
 import y.utils.GeneralProperties;
 import y.utils.LastUsedFolder;
@@ -65,12 +65,15 @@ public class MainWindow extends JFrame {
 	
 	private Project current_project = null;
 	private CustomXWPFDocument wpf_document = null;
-	private GeneralProperties<String> config;
 	
-	public MainWindow(GeneralProperties<String> config) {
+	private GeneralProperties<String> config;
+	private AddressBook book;
+	
+	public MainWindow(GeneralProperties<String> config, AddressBook book) {
 		super("yPareriSRB - "+yParereSRB.VersionString);
 		
 		this.config = config;
+		this.book = book;
 		
 		LastUsedFolder.init(".");
 
