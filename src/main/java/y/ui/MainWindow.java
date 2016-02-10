@@ -87,7 +87,6 @@ public class MainWindow extends JFrame {
 		});
 		
 		setPreferredSize(PREFERRED_DIMENSION);
-	
 		
 		setLayout(new BorderLayout());
 		
@@ -102,7 +101,7 @@ public class MainWindow extends JFrame {
 		phase0panelC.add(Utils.createOpenFileTextField(this, templateFile, "template file", "docx"));
 		
 		phase0panelC.add(new JLabel(" yEM Filename:"));
-		yemFile = new JTextField("D:\\ARPA\\160127 Nimis-ViaMerano-VF_UD5297\\00prjVFserteco.yem");
+		yemFile = new JTextField("");
 		phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
 		
 		
