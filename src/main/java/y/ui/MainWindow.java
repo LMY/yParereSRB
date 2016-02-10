@@ -362,7 +362,7 @@ public class MainWindow extends JFrame {
 		}
 	}
 
-	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,]+";
+	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/]+";
 	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();
@@ -445,13 +445,14 @@ public class MainWindow extends JFrame {
 	private boolean doWriteResult(CustomXWPFDocument hdoc, Map<String, String> subst, String filename) {		
 		replace(hdoc, hdoc.getParagraphs(), subst);
 
-		for (XWPFTable tbl : hdoc.getTables())
+		for (XWPFTable tbl : hdoc.getTables()) {
 			if (tbl != null)
 				for (XWPFTableRow row : tbl.getRows())
 					if (row != null)
 						for (XWPFTableCell cell : row.getTableCells())
 							if (cell != null)
 								replace(hdoc, cell.getParagraphs(), subst);
+		}
 		
 		for (XWPFFooter footer : hdoc.getFooterList())
 			if (footer != null)
@@ -460,6 +461,37 @@ public class MainWindow extends JFrame {
 		for (XWPFHeader header : hdoc.getHeaderList())
 			if (header != null)
 				replace(hdoc, header.getParagraphs(), subst);
+		
+		// TABLE REPLACE
+		{
+			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.PREESISTENTI");
+			if (tables.size() != 1)
+				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.PREESISTENTI", "WARNING");
+			for (XWPFTable table : tables) {
+				List<XWPFTableRow> rows = table.getRows(); 
+
+				for (int i=1; i<rows.size(); i++)
+					table.removeRow(i);
+				
+				final Site[] preesistenti = current_project.getSites();
+				for (int i=1; i<preesistenti.length; i++)
+					putTextInRow(table.createRow(), "Garamond", 12, new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
+			}
+		}
+		
+		{
+			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.MISURE");
+			if (tables.size() != 1)
+				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.MISURE", "WARNING");
+		}
+
+		{
+			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.RADIOELETTRICA");
+			if (tables.size() == 0)
+				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.RADIOELETTRICA", "WARNING");
+			
+			
+		}
 		
 		FileOutputStream fo = null;
 		
@@ -480,6 +512,23 @@ public class MainWindow extends JFrame {
 		}
 	}
 	
+	private void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
+		for (int i=0; i<strings.length; i++) {
+			final XWPFTableCell cell = row.getCell(i);
+			
+			// remove all paragraphs
+			while (cell.getParagraphs().size() > 0)
+				cell.removeParagraph(0);
+			
+			// create a paragraph, containing 1 run
+			final XWPFRun run = cell.addParagraph().createRun();
+			
+			run.setFontFamily(fontname);
+			run.setFontSize(fontsize);
+			run.setText(strings[i], 0);
+		}
+	}
+
 	private void replace(CustomXWPFDocument hdoc, List<XWPFParagraph> paragraphs, Map<String, String> subst) {
 		for (XWPFParagraph p : paragraphs) {
 			if (p == null)
@@ -547,24 +596,44 @@ public class MainWindow extends JFrame {
 						break;
 					}
 			}
-			
-			// TABLE REPLACE
-			for (XWPFRun r : runs) {
-				if (r == null)
-					continue;
-				
-				String text = r.getText(0);
-				if (text == null || text.isEmpty())
-					continue;
-				
-				for (String key : subst.keySet())
-					if (key.startsWith("$TABELLA") && text.contains(key)) {
-						r.setText("", 0);
-
-
-					}
-			}
 		}
+	}
+	
+	
+	
+	public static List<XWPFTable> getTable(CustomXWPFDocument hdoc, String which_one) {
+		final List<XWPFTable> ret = new ArrayList<XWPFTable>();
+
+		//        /|
+		//       / |
+		//      /  |
+		//     /   | oh well
+		//    /    |
+		//   /     |
+		//  /      |
+		// /       |
+		for (XWPFTable tbl : hdoc.getTables())
+			if (tbl != null)
+				for (XWPFTableRow row : tbl.getRows())
+					if (row != null)
+						for (XWPFTableCell cell : row.getTableCells())
+							if (cell != null)
+								for (XWPFParagraph p : cell.getParagraphs())
+									if (p != null)
+										for (XWPFRun r : p.getRuns())
+											if (r != null) {
+												final String text = r.getText(0);
+												if (Utils.IsNullOrEmpty(text))
+													continue;
+												
+												final String[] parts = text.split(REGEXP_SPACES_AND_STUFF);
+												for (String word : parts)
+													if (word.equals(which_one))
+														if (!ret.contains(tbl))
+															ret.add(tbl);
+											}
+		
+		return ret;
 	}
 	
 	
