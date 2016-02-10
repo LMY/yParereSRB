@@ -43,6 +43,7 @@ import y.utils.CustomXWPFDocument;
 import y.utils.GeneralProperties;
 import y.utils.LastUsedFolder;
 import y.utils.Utils;
+import y.utils.UtilsOffice;
 
 public class MainWindow extends JFrame {
 
@@ -182,10 +183,6 @@ public class MainWindow extends JFrame {
 		}
 	}
 
-	
-	
-
-	
 	private Map<String, String> fillInDefaults(Set<String> fields) {
 		final Map<String, String> map = new LinkedHashMap<String, String>();	// preserve az order of keys
 		
@@ -234,7 +231,7 @@ public class MainWindow extends JFrame {
 					if (site.getDbinfo().getCodiceSito() != null && !site.getDbinfo().getCodiceSito().isEmpty())
 						map.put(s, site.getDbinfo().getCodiceSito());
 					else {
-						final String[] parts = site.getDbinfo().getNote().split(REGEXP_SPACES_AND_STUFF);
+						final String[] parts = site.getDbinfo().getNote().split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
 						map.put(s, parts.length > 0 ? parts[0] : "");
 					}
 				}
@@ -245,7 +242,7 @@ public class MainWindow extends JFrame {
 				else if (s.equals("$SITO.Z")) 
 					map.put(s, Utils.formatDouble(site.getPosition().getZ(), 2));
 				else if (s.equals("$RICONFIGURA.ID")) {
-					final String[] parts = site.getDbinfo().getNote().split(REGEXP_SPACES_AND_STUFF);
+					final String[] parts = site.getDbinfo().getNote().split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
 					
 					boolean found = false;
 					
@@ -352,7 +349,7 @@ public class MainWindow extends JFrame {
 	}
 	
 	
-	private String adjustDate(String data_proto_out) {
+	private static String adjustDate(String data_proto_out) {
 		try {
 			final String r = data_proto_out.replaceFirst("00:00:00.0", "").trim();
 			return r.substring(8, 10) + "." + r.substring(5, 7) + "." + r.substring(0, 4);
@@ -362,7 +359,6 @@ public class MainWindow extends JFrame {
 		}
 	}
 
-	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/]+";
 	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();
@@ -407,7 +403,7 @@ public class MainWindow extends JFrame {
 				if (text == null || text.isEmpty())
 					continue;
 				
-				final String[] parts = text.split(REGEXP_SPACES_AND_STUFF);
+				final String[] parts = text.split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
 				for (String word : parts)
 					if (word.startsWith("$"))
 						ret.add(word);
@@ -464,7 +460,7 @@ public class MainWindow extends JFrame {
 		
 		// TABLE REPLACE
 		{
-			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.PREESISTENTI");
+			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.PREESISTENTI");
 			if (tables.size() != 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.PREESISTENTI", "WARNING");
 			for (XWPFTable table : tables) {
@@ -475,18 +471,18 @@ public class MainWindow extends JFrame {
 				
 				final Site[] preesistenti = current_project.getSites();
 				for (int i=1; i<preesistenti.length; i++)
-					putTextInRow(table.createRow(), "Garamond", 12, new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
+					UtilsOffice.putTextInRow(table.createRow(), "Garamond", 12, new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
 			}
 		}
 		
 		{
-			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.MISURE");
+			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.MISURE");
 			if (tables.size() != 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.MISURE", "WARNING");
 		}
 
 		{
-			final List<XWPFTable> tables = getTable(hdoc, "$TABELLA.RADIOELETTRICA");
+			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.RADIOELETTRICA");
 			if (tables.size() == 0)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.RADIOELETTRICA", "WARNING");
 			
@@ -512,23 +508,6 @@ public class MainWindow extends JFrame {
 		}
 	}
 	
-	private void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
-		for (int i=0; i<strings.length; i++) {
-			final XWPFTableCell cell = row.getCell(i);
-			
-			// remove all paragraphs
-			while (cell.getParagraphs().size() > 0)
-				cell.removeParagraph(0);
-			
-			// create a paragraph, containing 1 run
-			final XWPFRun run = cell.addParagraph().createRun();
-			
-			run.setFontFamily(fontname);
-			run.setFontSize(fontsize);
-			run.setText(strings[i], 0);
-		}
-	}
-
 	private void replace(CustomXWPFDocument hdoc, List<XWPFParagraph> paragraphs, Map<String, String> subst) {
 		for (XWPFParagraph p : paragraphs) {
 			if (p == null)
@@ -575,7 +554,7 @@ public class MainWindow extends JFrame {
 							is = new FileInputStream(picFilename);
 							
 							// http://stackoverflow.com/questions/17745466/insert-picture-in-word-document
-							final int format = getPictureFormat(picFilename);
+							final int format = UtilsOffice.getPictureFormat(picFilename);
 							final String id = hdoc.addPictureData(is, format);
 							hdoc.createPicture(r, id, hdoc.getNextPicNameNumber(format),
 									config.get(Integer.class, "Image.width"), config.get(Integer.class, "Image.height"));
@@ -597,61 +576,5 @@ public class MainWindow extends JFrame {
 					}
 			}
 		}
-	}
-	
-	
-	
-	public static List<XWPFTable> getTable(CustomXWPFDocument hdoc, String which_one) {
-		final List<XWPFTable> ret = new ArrayList<XWPFTable>();
-
-		//        /|
-		//       / |
-		//      /  |
-		//     /   | oh well
-		//    /    |
-		//   /     |
-		//  /      |
-		// /       |
-		for (XWPFTable tbl : hdoc.getTables())
-			if (tbl != null)
-				for (XWPFTableRow row : tbl.getRows())
-					if (row != null)
-						for (XWPFTableCell cell : row.getTableCells())
-							if (cell != null)
-								for (XWPFParagraph p : cell.getParagraphs())
-									if (p != null)
-										for (XWPFRun r : p.getRuns())
-											if (r != null) {
-												final String text = r.getText(0);
-												if (Utils.IsNullOrEmpty(text))
-													continue;
-												
-												final String[] parts = text.split(REGEXP_SPACES_AND_STUFF);
-												for (String word : parts)
-													if (word.equals(which_one))
-														if (!ret.contains(tbl))
-															ret.add(tbl);
-											}
-		
-		return ret;
-	}
-	
-	
-	public static int getPictureFormat(String imgFile) {
-		imgFile = imgFile.toLowerCase();
-		
-        if (imgFile.endsWith(".emf")) return XWPFDocument.PICTURE_TYPE_EMF;
-        else if(imgFile.endsWith(".wmf")) return XWPFDocument.PICTURE_TYPE_WMF;
-        else if(imgFile.endsWith(".pict")) return XWPFDocument.PICTURE_TYPE_PICT;
-        else if(imgFile.endsWith(".jpeg") || imgFile.endsWith(".jpg")) return XWPFDocument.PICTURE_TYPE_JPEG;
-        else if(imgFile.endsWith(".png")) return XWPFDocument.PICTURE_TYPE_PNG;
-        else if(imgFile.endsWith(".dib")) return XWPFDocument.PICTURE_TYPE_DIB;
-        else if(imgFile.endsWith(".gif")) return XWPFDocument.PICTURE_TYPE_GIF;
-        else if(imgFile.endsWith(".tiff")) return XWPFDocument.PICTURE_TYPE_TIFF;
-        else if(imgFile.endsWith(".eps")) return XWPFDocument.PICTURE_TYPE_EPS;
-        else if(imgFile.endsWith(".bmp")) return XWPFDocument.PICTURE_TYPE_BMP;
-        else if(imgFile.endsWith(".wpg")) return XWPFDocument.PICTURE_TYPE_WPG;
-        
-        return -1;
 	}
 }
