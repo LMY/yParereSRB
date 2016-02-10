@@ -484,7 +484,8 @@ public class MainWindow extends JFrame {
 					UtilsOffice.putTextInRow(table.createRow(),
 							config.getOrDefault(String.class, "Font.preesistenti.name", "Garamond"),
 							config.getOrDefault(Integer.class, "Font.preesistenti.size", 12),
-							new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
+							new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() },
+							new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.LEFT });
 			}
 		}
 		
@@ -526,7 +527,51 @@ public class MainWindow extends JFrame {
 			if (tables.size() == 0)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.RADIOELETTRICA", "WARNING");
 			
+			final String radioelettrica_filename = subst.get("$TABELLA.RADIOELETTRICA");
+			List<String[]> radioelt = null;
 			
+			try {
+				radioelt = UtilsOffice.getRadioelettrica(radioelettrica_filename);
+			}
+			catch (Exception e) {
+				Utils.MessageBox("Cannot read measure filename:\n"+radioelettrica_filename, "ERROR");
+			}
+			
+			if (radioelt != null) {
+				int k=5;	// moving in radioelt
+				
+				for (int i=0, imax=tables.size(); i<imax; i++) {
+					final XWPFTable table = tables.get(i);
+					final List<XWPFTableRow> rows = table.getRows(); 
+	
+					while (rows.size() > 1)	
+						table.removeRow(1);
+					
+					++k; // skip first table line
+					
+					if (!((k < radioelt.size() && radioelt.get(k).length > 0))) { // no such line
+						int position = hdoc.getPosOfTable(table);
+						hdoc.removeBodyElement(position);
+						hdoc.removeBodyElement(position); // table caption
+						// remove table
+					}
+					else {
+						// put data in table
+						int lineoftable=0;
+						
+						while (k < radioelt.size() && radioelt.get(k).length > 0) {
+							UtilsOffice.putTextInRowIntest(table.createRow(),
+									config.getOrDefault(String.class, "Font.radioelettriche.name", "Garamond"),
+									config.getOrDefault(Integer.class, "Font.radioelettriche.size", 10),
+									UtilsOffice.formatIntestRow(radioelt.get(k), lineoftable++), ParagraphAlignment.CENTER);
+									
+							++k;
+						}
+					}
+					
+					++k; // skip bottom empty line
+				}
+			}
 		}
 		
 		FileOutputStream fo = null;

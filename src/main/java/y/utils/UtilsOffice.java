@@ -16,6 +16,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell.XWPFVertAlign;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 public class UtilsOffice {
@@ -23,9 +24,13 @@ public class UtilsOffice {
 	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/]+";
 	
 	public static void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
+		putTextInRow(row, fontname, fontsize, strings, (ParagraphAlignment)null);
+	}
+	
+	public static void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings, ParagraphAlignment aalign) {
 		final ParagraphAlignment[] align = new ParagraphAlignment[strings.length];
 		for (int i=0; i<align.length; i++)
-			align[i] = null;
+			align[i] = aalign;
 		
 		putTextInRow(row, fontname, fontsize, strings, align);
 	}
@@ -52,6 +57,72 @@ public class UtilsOffice {
 			run.setFontSize(fontsize);
 			run.setText(strings[i], 0);
 		}
+	}
+	
+	
+	
+	public static void putTextInRowIntest(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
+		putTextInRowIntest(row, fontname, fontsize, strings, (ParagraphAlignment)null);
+	}
+	
+	public static void putTextInRowIntest(XWPFTableRow row, String fontname, int fontsize, String[] strings, ParagraphAlignment aalign) {
+		final ParagraphAlignment[] align = new ParagraphAlignment[strings.length];
+		for (int i=0; i<align.length; i++)
+			align[i] = aalign;
+		
+		putTextInRowIntest(row, fontname, fontsize, strings, align);
+	}
+	
+	public static void putTextInRowIntest(XWPFTableRow row, String fontname, int fontsize, String[] strings, ParagraphAlignment[] align) {
+		for (int i=0; i<strings.length; i++) {
+			XWPFTableCell cell = row.getCell(i);
+			if (cell == null)
+				cell = row.createCell();
+			
+			// remove all paragraphs
+			while (cell.getParagraphs().size() > 0)
+				cell.removeParagraph(0);
+			
+			// create a paragraph, containing 1 run
+			final XWPFParagraph paragraph = cell.addParagraph();
+
+			if (align[i] != null && i < align.length)
+				paragraph.setAlignment(align[i]);
+			
+			cell.setVerticalAlignment(XWPFVertAlign.CENTER);
+			
+			final XWPFRun run = paragraph.createRun();
+			
+			if (i == 0) {
+				run.setBold(true);
+				cell.setColor("E6E6E6");
+			}
+
+			run.setFontFamily(fontname);
+			run.setFontSize(fontsize);
+			run.setText(strings[i], 0);
+		}
+	}
+	
+	public static String[] formatIntestRow(String[] strings, int rown) {
+		final String[] ret = new String[strings.length];
+		
+		for (int i=0; i<strings.length; i++)
+			try {
+				if (rown == 1 || rown == 2)	// 1 dec. coordinates
+					ret[i] = ""+ Utils.formatDouble(Double.parseDouble(strings[i]), 1);
+				else if (rown == 5)	// 2 dec. height
+					ret[i] = ""+ Utils.formatDouble(Double.parseDouble(strings[i]), 1);
+				else if (rown == 0 || rown == 4 || rown == 6 || rown == 7 || rown == 8 || rown == 9 || rown == 10)
+					ret[i] = ""+ Utils.formatDoubleAsNeeded(Double.parseDouble(strings[i]), 1);
+				else 
+					ret[i] = strings[i];
+			}
+			catch (NumberFormatException e) {
+				ret[i] = strings[i];
+			}
+	
+		return ret;
 	}
 	
 	public static List<XWPFTable> getTable(CustomXWPFDocument hdoc, String which_one) {
@@ -163,6 +234,66 @@ public class UtilsOffice {
 		return ret;		
 	}
 	
+	
+	public static List<String[]> getRadioelettrica(String filename) throws Exception {
+		
+		final List<String[]> ret = new ArrayList<String[]>();
+		
+		final FileInputStream fis = new FileInputStream(new File(filename));
+
+		// Finds the workbook instance for XLSX file
+		XSSFWorkbook myWorkBook = null;
+		try {
+			myWorkBook = new XSSFWorkbook (fis);
+
+			// Return first sheet from the XLSX workbook
+			final XSSFSheet mySheet = myWorkBook.getSheetAt(0);
+
+			// Get iterator to all the rows in current sheet
+			final Iterator<Row> rowIterator = mySheet.iterator();
+
+			// Traversing over each row of XLSX file
+			while (rowIterator.hasNext()) {
+				final Row row = rowIterator.next();
+
+				final List<String> line = new ArrayList<String>();
+				final Iterator<Cell> cellIterator = row.cellIterator();
+				
+				while (cellIterator.hasNext()) {
+					final Cell cell = cellIterator.next();
+					
+					String value = "";
+
+					switch (cell.getCellType()) {
+						case Cell.CELL_TYPE_STRING:
+							value = cell.getStringCellValue();
+							break;
+						case Cell.CELL_TYPE_NUMERIC:
+							value = ""+cell.getNumericCellValue();
+							break;
+						case Cell.CELL_TYPE_BOOLEAN:
+							value = ""+cell.getBooleanCellValue();
+							break;
+						default :
+					}
+					
+				
+					if (!value.isEmpty())
+						line.add(value);
+				}
+
+				ret.add(line.toArray(new String[line.size()]));
+			}
+		}
+		catch (Exception e) {}
+		finally {
+			if (myWorkBook != null)
+				try { myWorkBook.close(); }
+				catch (Exception e2) {}
+		}
+		
+		return ret;		
+	}
 	
 	public static int getPictureFormat(String imgFile) {
 		imgFile = imgFile.toLowerCase();
