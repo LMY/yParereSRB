@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
@@ -420,7 +421,15 @@ public class MainWindow extends JFrame {
 		String outfilename = Utils.saveFileDialog("Select file", this, "MS-Office docx", "docx");
 		
 		if (outfilename != null && !outfilename.isEmpty()) {
-
+			if (Utils.getFilenameOfFile(outfilename).equals(TEMPLATE_FILENAME)) {
+				Utils.MessageBox(TEMPLATE_FILENAME+"\nIs an invalid filename.\nChoose any other one!", "ERROR");
+				return false;
+			}
+			
+			// check if file exists
+			if (new File(outfilename).exists() && !Utils.MessageBoxYesNo(this, "File\n"+outfilename+"\nexists. Overwrite?", "Confirm overwrite"))
+				return false;
+			
 			// append ".docx" if user does not specify extension
 			if (!outfilename.toLowerCase().endsWith("doc") && !outfilename.toLowerCase().endsWith("docx"))
 				outfilename += ".docx";
@@ -463,11 +472,12 @@ public class MainWindow extends JFrame {
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.PREESISTENTI");
 			if (tables.size() != 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.PREESISTENTI", "WARNING");
+			
 			for (XWPFTable table : tables) {
-				List<XWPFTableRow> rows = table.getRows(); 
+				final List<XWPFTableRow> rows = table.getRows(); 
 
-				for (int i=1; i<rows.size(); i++)
-					table.removeRow(i);
+				while (rows.size() > 1)
+					table.removeRow(1);
 				
 				final Site[] preesistenti = current_project.getSites();
 				for (int i=1; i<preesistenti.length; i++)
@@ -479,6 +489,30 @@ public class MainWindow extends JFrame {
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.MISURE");
 			if (tables.size() != 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.MISURE", "WARNING");
+			
+			final String measure_filename = subst.get("$TABELLA.MISURE");
+			List<String[]> measures = null;
+			
+			try {
+				measures = UtilsOffice.getMeasureValue(measure_filename);
+			}
+			catch (Exception e) {
+				Utils.MessageBox("Cannot read measure filename:\n"+measure_filename, "ERROR");
+			}
+			
+			if (measures != null)
+				for (XWPFTable table : tables) {
+					final List<XWPFTableRow> rows = table.getRows(); 
+	
+					while (rows.size() > 2)	
+						table.removeRow(2);
+					
+					for (int i=1; i<measures.size(); i++)
+						UtilsOffice.putTextInRow(table.createRow(), "Garamond", 10, measures.get(i),
+								new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.LEFT, ParagraphAlignment.CENTER, 
+															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER
+															, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
+				}
 		}
 
 		{

@@ -1,8 +1,16 @@
 package y.utils;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -15,23 +23,36 @@ public class UtilsOffice {
 	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/]+";
 	
 	public static void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
+		final ParagraphAlignment[] align = new ParagraphAlignment[strings.length];
+		for (int i=0; i<align.length; i++)
+			align[i] = null;
+		
+		putTextInRow(row, fontname, fontsize, strings, align);
+	}
+	
+	public static void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings, ParagraphAlignment[] align) {
 		for (int i=0; i<strings.length; i++) {
-			final XWPFTableCell cell = row.getCell(i);
+			XWPFTableCell cell = row.getCell(i);
+			if (cell == null)
+				cell = row.createCell();
 			
 			// remove all paragraphs
 			while (cell.getParagraphs().size() > 0)
 				cell.removeParagraph(0);
 			
 			// create a paragraph, containing 1 run
-			final XWPFRun run = cell.addParagraph().createRun();
+			final XWPFParagraph paragraph = cell.addParagraph();
+
+			if (align[i] != null && i < align.length)
+				paragraph.setAlignment(align[i]);
+			
+			final XWPFRun run = paragraph.createRun();
 			
 			run.setFontFamily(fontname);
 			run.setFontSize(fontsize);
 			run.setText(strings[i], 0);
 		}
 	}
-	
-
 	
 	public static List<XWPFTable> getTable(CustomXWPFDocument hdoc, String which_one) {
 		final List<XWPFTable> ret = new ArrayList<XWPFTable>();
@@ -67,7 +88,81 @@ public class UtilsOffice {
 		
 		return ret;
 	}
+	
+	
 
+	public static List<String[]> getMeasureValue(String filename) throws Exception {
+		
+		final List<String[]> ret = new ArrayList<String[]>();
+		
+		final FileInputStream fis = new FileInputStream(new File(filename));
+
+		// Finds the workbook instance for XLSX file
+		XSSFWorkbook myWorkBook = null;
+		try {
+			myWorkBook = new XSSFWorkbook (fis);
+
+			// Return first sheet from the XLSX workbook
+			final XSSFSheet mySheet = myWorkBook.getSheetAt(0);
+
+			// Get iterator to all the rows in current sheet
+			final Iterator<Row> rowIterator = mySheet.iterator();
+
+			// Traversing over each row of XLSX file
+			while (rowIterator.hasNext()) {
+				final Row row = rowIterator.next();
+
+				final List<String> line = new ArrayList<String>();
+				int col = 0;
+				final Iterator<Cell> cellIterator = row.cellIterator();
+				
+				while (cellIterator.hasNext()) {
+					final Cell cell = cellIterator.next();
+					
+					String value = "";
+
+					switch (cell.getCellType()) {
+						case Cell.CELL_TYPE_STRING:
+							value = cell.getStringCellValue();
+							break;
+						case Cell.CELL_TYPE_NUMERIC:
+							value = ""+cell.getNumericCellValue();
+							break;
+						case Cell.CELL_TYPE_BOOLEAN:
+							value = ""+cell.getBooleanCellValue();
+							break;
+						default :
+					}
+					
+					try {
+						if (col == 0)
+							value = ""+(int)Double.parseDouble(value);
+						else if (col == 1 || col == 3 || col == 4)
+							; // string columns
+						else // 2, 5, 6, 7
+							value = ""+ Utils.formatDouble(Double.parseDouble(value), 1);
+					}
+					catch (NumberFormatException e) {} // first line will fail every conversion. anyway, whatever the case is, do not convert
+					
+					if (!value.isEmpty())
+						line.add(value);
+					
+					++col;
+				}
+
+				ret.add(line.toArray(new String[line.size()]));
+			}
+		}
+		catch (Exception e) {}
+		finally {
+			if (myWorkBook != null)
+				try { myWorkBook.close(); }
+				catch (Exception e2) {}
+		}
+		
+		return ret;		
+	}
+	
 	
 	public static int getPictureFormat(String imgFile) {
 		imgFile = imgFile.toLowerCase();
