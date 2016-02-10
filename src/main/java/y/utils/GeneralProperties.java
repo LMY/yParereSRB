@@ -16,6 +16,16 @@ public class GeneralProperties<KeyType> {
 		return themap == null ? null : (T) themap.get(key);
 	}
 	
+	@SuppressWarnings("unchecked")
+	public <T> T getOrDefault(Class<T> type, KeyType key, T default_value) {
+		final Map<KeyType, ?> themap = maps.get(type);
+		if (themap == null)
+			return null;
+		
+		final T value = (T) themap.get(key);
+		return value != null ? value : default_value;
+	}
+	
 	public <T> void set(KeyType key, T value) {
 		set(value.getClass(), key, value);
 	}

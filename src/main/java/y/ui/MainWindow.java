@@ -481,7 +481,10 @@ public class MainWindow extends JFrame {
 				
 				final Site[] preesistenti = current_project.getSites();
 				for (int i=1; i<preesistenti.length; i++)
-					UtilsOffice.putTextInRow(table.createRow(), "Garamond", 12, new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
+					UtilsOffice.putTextInRow(table.createRow(),
+							config.getOrDefault(String.class, "Font.preesistenti.name", "Garamond"),
+							config.getOrDefault(Integer.class, "Font.preesistenti.size", 12),
+							new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() });
 			}
 		}
 		
@@ -508,7 +511,10 @@ public class MainWindow extends JFrame {
 						table.removeRow(2);
 					
 					for (int i=1; i<measures.size(); i++)
-						UtilsOffice.putTextInRow(table.createRow(), "Garamond", 10, measures.get(i),
+						UtilsOffice.putTextInRow(table.createRow(),
+								config.getOrDefault(String.class, "Font.misure.name", "Garamond"),
+								config.getOrDefault(Integer.class, "Font.misure.size", 10),
+								measures.get(i),
 								new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.LEFT, ParagraphAlignment.CENTER, 
 															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER
 															, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
