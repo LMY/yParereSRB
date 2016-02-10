@@ -49,6 +49,9 @@ public class AddressBook {
 	
 	public String getCloserName(String name) {
 		
+		if (Utils.IsNullOrEmpty(name))
+			return "";
+		
 		int min = Integer.MAX_VALUE;
 		String best = "";
 		
