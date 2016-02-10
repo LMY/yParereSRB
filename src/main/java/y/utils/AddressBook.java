@@ -47,6 +47,24 @@ public class AddressBook {
 	}
 	
 	
+	public String getCloserName(String name) {
+		
+		int min = Integer.MAX_VALUE;
+		String best = "";
+		
+		for (String s : emails.keySet()) {
+			final int cur = LevenshteinDistance(s, name, false);
+			
+			if (min == Integer.MAX_VALUE || cur < min) {
+				min = cur;
+				best = s;
+			}
+		}
+		
+		return best;
+	}
+	
+	
 	public final static String DEFAULT_FILENAME = "addresses.xml";
 	
 	public static AddressBook read() throws Exception { return read(DEFAULT_FILENAME); }
@@ -151,5 +169,65 @@ public class AddressBook {
 		final DOMSource source = new DOMSource(doc);
 		final StreamResult result = new StreamResult(new File(filename));
 		transformer.transform(source, result);
+	}
+	
+	
+	// these arrays will grow
+	private static int[] levenshtein_v0 = null;
+	private static int[] levenshtein_v1 = null;
+	
+	public static int LevenshteinDistance(String s, String t) {
+		return LevenshteinDistance(s, t, true);
+	}
+	
+	// modified version of: https://en.wikipedia.org/wiki/Levenshtein_distance
+	// reduce number of new int[] for consecutive calls. but never releases working memory (that shouldn't be that big anyway)
+	public static int LevenshteinDistance(String s, String t, boolean case_sensitive)
+	{
+		final int slen = s.length();
+		final int tlen = t.length();
+		
+	    // degenerate cases
+	    if (s == t) return 0;
+	    if (s.length() == 0) return tlen;
+	    if (t.length() == 0) return slen;
+
+	    // create two work vectors of integer distances
+	    // LMY: reallocate only when not big enough
+	    final int actual_len = tlen+1;
+	    
+	    if (levenshtein_v0 == null || levenshtein_v0.length < actual_len) {
+		    levenshtein_v0 = new int[actual_len];
+		    levenshtein_v1 = new int[actual_len];
+	    }
+	    
+	    // initialize v0 (the previous row of distances)
+	    // this row is A[0][i]: edit distance for an empty s
+	    // the distance is just the number of characters to delete from t
+	    for (int i = 0; i < actual_len; i++)
+	        levenshtein_v0[i] = i;
+
+	    for (int i = 0; i < slen; i++) {
+	        // calculate v1 (current row distances) from the previous row v0
+
+	        // first element of v1 is A[i+1][0]
+	        //   edit distance is delete (i+1) chars from s to match empty t
+	        levenshtein_v1[0] = i + 1;
+
+	        // use formula to fill in the rest of the row
+	        for (int j = 0; j < tlen; j++) {
+	            final int cost = case_sensitive ?
+	            					(s.charAt(i) == t.charAt(j) ? 0 : 1) :
+	            					(Character.toLowerCase(s.charAt(i)) == Character.toLowerCase(t.charAt(j)) ? 0 : 1);
+	            					
+	            levenshtein_v1[j + 1] = Math.min(levenshtein_v1[j] + 1, Math.min(levenshtein_v0[j + 1] + 1, levenshtein_v0[j] + cost));
+	        }
+
+	        // copy v1 (current row) to v0 (previous row) for next iteration
+	        for (int j = 0; j < actual_len; j++)
+	            levenshtein_v0[j] = levenshtein_v1[j];
+	    }
+
+	    return levenshtein_v1[tlen];
 	}
 }

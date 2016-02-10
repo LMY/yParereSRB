@@ -206,17 +206,17 @@ public class MainWindow extends JFrame {
 				else if (s.equals("$COMUNE.NOME")) {
 					final String mem_comune = site.getDbinfo().getComune();
 					map.put(s, mem_comune);
-					map.put("$COMUNE.EMAIL", book.getEmail(mem_comune));
+					map.put("$COMUNE.EMAIL", book.getEmail(book.getCloserName(mem_comune)));
 				}
 				else if (s.equals("$GESTORE.NOME")) {
 					final String mem_gestore = site.getDbinfo().getOperatore();
 					map.put(s, mem_gestore);
-					map.put("$GESTORE.EMAIL", book.getEmail(mem_gestore));
+					map.put("$GESTORE.EMAIL", book.getEmail(book.getCloserName(mem_gestore)));
 				}
 				else if (s.equals("$STUDIOTECNICO.NOME")) {
 					final String mem_gestore = "";
 					map.put(s, mem_gestore);
-					map.put("$STUDIOTECNICO.EMAIL", book.getEmail(mem_gestore));
+					map.put("$STUDIOTECNICO.EMAIL", book.getEmail(book.getCloserName(mem_gestore)));
 				}				
 				else if (s.equals("$INDIRIZZO.INDIRIZZO")) 
 					map.put(s, Utils.capitalize(site.getDbinfo().getIndirizzo()));
