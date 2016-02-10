@@ -500,7 +500,8 @@ public class MainWindow extends JFrame {
 				
 				for (String key : subst.keySet())
 					if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key)) {
-						text = text.replace(key, subst.get(key));
+						final String value = subst.get(key);
+						text = text.replace(key, value != null ? value : "");
 					}
 				
 				r.setText(text, 0);
@@ -557,10 +558,11 @@ public class MainWindow extends JFrame {
 					continue;
 				
 				for (String key : subst.keySet())
-					if (key.startsWith("$TABELLA") && text.contains(key))
-						text = text.replace(key, subst.get(key));
-				
-				r.setText(text, 0);
+					if (key.startsWith("$TABELLA") && text.contains(key)) {
+						r.setText("", 0);
+
+
+					}
 			}
 		}
 	}

@@ -20,8 +20,9 @@ repositories {
 }
 
 dependencies {
-	compile 'org.apache.poi:poi:3.13'
-	compile 'org.apache.poi:poi-ooxml:3.13'
+	compile 'org.docx4j:docx4j:3.2.2'
+//	compile 'org.apache.poi:poi:3.13'
+//	compile 'org.apache.poi:poi-ooxml:3.13'
 }
 
 
