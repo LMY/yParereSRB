@@ -14,11 +14,10 @@ import javax.swing.table.AbstractTableModel;
 public class JHashTable extends JPanel {
 
 	private static final long serialVersionUID = -6612588161525911197L;
-	
+
 	
 	private HashTableModel model;
 	private JTable table;
-	
 	
 	public JHashTable() {
 		super();
@@ -57,24 +56,6 @@ public class JHashTable extends JPanel {
 			keys = new ArrayList<String>();
 			values = new ArrayList<String>();
 		}
-		
-//		public HashTableModel(Set<String> map) {
-//			this();
-//			
-//			for (String key : map) {
-//				keys.add(key);
-//				values.add("");
-//			}
-//		}
-//		
-//		public HashTableModel(Map<String, String> map) {
-//			this();
-//			
-//			for (String key : map.keySet()) {
-//				keys.add(key);
-//				values.add(map.get(key));
-//			}
-//		}
 		
 		@Override
 		public int getColumnCount() {

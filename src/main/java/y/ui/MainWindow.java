@@ -53,35 +53,40 @@ public class MainWindow extends JFrame {
 	public final static int WINDOW_WIDTH = 1100;
 	public final static int WINDOW_HEIGHT = (int) (WINDOW_WIDTH/ASPECT_RATIO);
 	public final static Dimension PREFERRED_DIMENSION = new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT);
+	
+	public final static int DEFAULT_PIC_WIDTH = 900; 
+	public final static int DEFAULT_PIC_HEIGHT = 648; 
+	public final static String DEFAULT_TEMPLATE_FILENAME = "template.docx"; 
+	
+	
+	private final String TEMPLATE_FILENAME;
+	
+	private final JTextField templateFile;
+	private final JTextField yemFile;
+	
+	private final JPanel phase0panel;
+	
+	private final JHashTable substTable;
+	private final JButton go2Button;
+	
+	private final GeneralProperties<String> config;
+	private final AddressBook book;
 
-	public final static String TEMPLATE_FILENAME = "template.docx";
-	
-	
-	private JTextField templateFile;
-	private JTextField yemFile;
-	
-	private JPanel phase0panel;
-	
-	private JHashTable substTable;
-	private JButton go2Button;
-	
 	private Project current_project = null;
 	private CustomXWPFDocument wpf_document = null;
 	
-	private GeneralProperties<String> config;
-	private AddressBook book;
-	
+
 	public MainWindow(GeneralProperties<String> config, AddressBook book) {
 		super("yPareriSRB - "+yParereSRB.VersionString);
 		
 		this.config = config;
 		this.book = book;
 		
-		LastUsedFolder.init(".");
+		TEMPLATE_FILENAME = config.getOrDefault(String.class, "templateFilename", DEFAULT_TEMPLATE_FILENAME);
+		LastUsedFolder.init(config.getOrDefault(String.class, "startFolder", "."));
 
 		addWindowListener(new WindowAdapter() {
 		    public void windowClosing(WindowEvent e) {
-		    	onClose();
 		    	System.exit(0);
 		    }
 		});
@@ -101,7 +106,7 @@ public class MainWindow extends JFrame {
 		phase0panelC.add(Utils.createOpenFileTextField(this, templateFile, "template file", "docx"));
 		
 		phase0panelC.add(new JLabel(" yEM Filename:"));
-		yemFile = new JTextField("");
+		yemFile = new JTextField(config.getOrDefault(String.class, "startYEMFile", ""));
 		phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
 		
 		
@@ -137,10 +142,6 @@ public class MainWindow extends JFrame {
 		
 		pack();
 		Utils.centerWindow(this);
-	}
-
-	private void onClose() {
-		
 	}
 	
 	private void enablePanels() {
@@ -446,14 +447,13 @@ public class MainWindow extends JFrame {
 	private boolean doWriteResult(CustomXWPFDocument hdoc, Map<String, String> subst, String filename) {		
 		replace(hdoc, hdoc.getParagraphs(), subst);
 
-		for (XWPFTable tbl : hdoc.getTables()) {
+		for (XWPFTable tbl : hdoc.getTables())
 			if (tbl != null)
 				for (XWPFTableRow row : tbl.getRows())
 					if (row != null)
 						for (XWPFTableCell cell : row.getTableCells())
 							if (cell != null)
 								replace(hdoc, cell.getParagraphs(), subst);
-		}
 		
 		for (XWPFFooter footer : hdoc.getFooterList())
 			if (footer != null)
@@ -491,16 +491,9 @@ public class MainWindow extends JFrame {
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.MISURE", "WARNING");
 			
 			final String measure_filename = subst.get("$TABELLA.MISURE");
-			List<String[]> measures = null;
 			
 			try {
-				measures = UtilsOffice.getMeasureValue(measure_filename);
-			}
-			catch (Exception e) {
-				Utils.MessageBox("Cannot read measure filename:\n"+measure_filename, "ERROR");
-			}
-			
-			if (measures != null)
+				final List<String[]> measures = UtilsOffice.getMeasureValue(measure_filename);
 				for (XWPFTable table : tables) {
 					final List<XWPFTableRow> rows = table.getRows(); 
 	
@@ -516,22 +509,19 @@ public class MainWindow extends JFrame {
 															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER,
 															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
 				}
+			}
+			catch (Exception e) {
+				Utils.MessageBox("Cannot read measure filename:\n"+measure_filename, "ERROR");
+			}
 		}
 
 		{
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.RADIOELETTRICA");
 			
 			final String radioelettrica_filename = subst.get("$TABELLA.RADIOELETTRICA");
-			List<String[]> radioelt = null;
 			
 			try {
-				radioelt = UtilsOffice.getRadioelettrica(radioelettrica_filename);
-			}
-			catch (Exception e) {
-				Utils.MessageBox("Cannot read measure filename:\n"+radioelettrica_filename, "ERROR");
-			}
-			
-			if (radioelt != null) {
+				final List<String[]> radioelt = UtilsOffice.getRadioelettrica(radioelettrica_filename);
 				int k=5;	// moving in radioelt
 				
 				for (int i=0, imax=tables.size(); i<imax; i++) {
@@ -565,6 +555,9 @@ public class MainWindow extends JFrame {
 					
 					++k; // skip bottom empty line
 				}
+			}
+			catch (Exception e) {
+				Utils.MessageBox("Cannot read measure filename:\n"+radioelettrica_filename, "ERROR");
 			}
 		}
 		
@@ -613,7 +606,7 @@ public class MainWindow extends JFrame {
 					// PIC REPLACE
 					for (XWPFRun r : runs)
 						if (r != null) {
-							String text = r.getText(0);
+							final String text = r.getText(0);
 							if (text == null || text.isEmpty())
 								continue;
 							
@@ -621,15 +614,18 @@ public class MainWindow extends JFrame {
 								if (key.startsWith("$PIC") && text.contains(key)) {
 									r.setText("", 0);
 									
-									final String picFilename = subst.get(key);
-									
-									try {
-										hdoc.createCustomPicture(r, picFilename, config.get(Integer.class, "Image.width"), config.get(Integer.class, "Image.height"));
+									if (config.getOrDefault(Boolean.class, "enablePics", true)) {
+										final String picFilename = subst.get(key);
+										
+										try {
+											hdoc.createCustomPicture(r, picFilename,
+													config.getOrDefault(Integer.class, "Image.width", DEFAULT_PIC_WIDTH),
+													config.getOrDefault(Integer.class, "Image.height", DEFAULT_PIC_HEIGHT));
+										}
+										catch (Exception e) {
+											Utils.MessageBox("Couldn't add pic:\n"+picFilename, "ERROR");
+										}
 									}
-									catch (Exception e) {
-										Utils.MessageBox("Couldn't add pic:\n"+picFilename, "ERROR");
-									}
-									
 									break;
 								}
 					}
