@@ -197,52 +197,52 @@ public class MainWindow extends JFrame {
 		
 		for (final String s : aFields)
 			try {
-				if (s.equals("$A.ANNO")) 
-					map.put(s, this_year);
-				else if (s.equals("$A.BREVEANNO")) 
-					map.put(s, this_year.substring(2));
-				else if (s.equals("$A.DATA") || s.equals("$TODAY") || s.equals("$DATE"))
-					map.put(s, today);
-				else if (s.equals("$COMUNE.NOME")) {
+				if (s.startsWith("$A.ANNO")) 
+					map.put("$A.ANNO", this_year);
+				else if (s.startsWith("$A.BREVEANNO")) 
+					map.put("$A.BREVEANNO", this_year.substring(2));
+				else if (s.startsWith("$A.DATA") || s.equals("$TODAY") || s.equals("$DATE"))
+					map.put("$A.DATA", today);
+				else if (s.startsWith("$COMUNE.NOME")) {
 					final String mem_comune = site.getDbinfo().getComune();
-					map.put(s, mem_comune);
+					map.put("$COMUNE.NOME", mem_comune);
 					map.put("$COMUNE.EMAIL", book.getEmail(book.getCloserName(mem_comune)));
 				}
-				else if (s.equals("$GESTORE.NOME")) {
+				else if (s.startsWith("$GESTORE.NOME")) {
 					final String mem_gestore = site.getDbinfo().getOperatore();
-					map.put(s, mem_gestore);
+					map.put("$GESTORE.NOME", mem_gestore);
 					map.put("$GESTORE.EMAIL", book.getEmail(book.getCloserName(mem_gestore)));
 				}
-				else if (s.equals("$STUDIOTECNICO.NOME")) {
+				else if (s.startsWith("$STUDIOTECNICO.NOME")) {
 					final String mem_gestore = "";
-					map.put(s, mem_gestore);
+					map.put("$STUDIOTECNICO.NOME", mem_gestore);
 					map.put("$STUDIOTECNICO.EMAIL", book.getEmail(book.getCloserName(mem_gestore)));
 				}				
-				else if (s.equals("$INDIRIZZO.INDIRIZZO")) 
-					map.put(s, Utils.capitalize(site.getDbinfo().getIndirizzo()));
-				else if (s.equals("$PROTOCOLLO.NUMERO")) 
-					map.put(s, site.getDbinfo().getProto_in().replaceAll("[Aa\\/]", ""));
-				else if (s.equals("$PROTOCOLLO.DATA") || s.equals("$PROTOCOLLO.DATAIN")) 
-					map.put(s, adjustDate(site.getDbinfo().getData_proto_in()));
-				else if (s.equals("$PROTOCOLLO.DATAOUT")) 
-					map.put(s, adjustDate(site.getDbinfo().getData_proto_out()));
-				else if (s.equals("$SITO.ID")) 
-					map.put(s, site.getID());
-				else if (s.equals("$SITO.NOME") || s.equals("$SITO.NAME")) {
+				else if (s.startsWith("$INDIRIZZO.INDIRIZZO")) 
+					map.put("$INDIRIZZO.INDIRIZZO", Utils.capitalize(site.getDbinfo().getIndirizzo()));
+				else if (s.startsWith("$PROTOCOLLO.NUMERO")) 
+					map.put("$PROTOCOLLO.NUMERO", site.getDbinfo().getProto_in().replaceAll("[Aa\\/]", ""));
+				else if (s.startsWith("$PROTOCOLLO.DATA") || s.startsWith("$PROTOCOLLO.DATAIN")) 
+					map.put("$PROTOCOLLO.DATA", adjustDate(site.getDbinfo().getData_proto_in()));
+//				else if (s.startsWith("$PROTOCOLLO.DATAOUT")) 
+//					map.put("$PROTOCOLLO.DATAOUT", adjustDate(site.getDbinfo().getData_proto_out()));
+				else if (s.startsWith("$SITO.ID")) 
+					map.put("$SITO.ID", site.getID());
+				else if (s.startsWith("$SITO.NOME") || s.startsWith("$SITO.NAME")) {
 					if (site.getDbinfo().getCodiceSito() != null && !site.getDbinfo().getCodiceSito().isEmpty())
 						map.put(s, site.getDbinfo().getCodiceSito());
 					else {
 						final String[] parts = site.getDbinfo().getNote().split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
-						map.put(s, parts.length > 0 ? parts[0] : "");
+						map.put("$SITO.NOME", parts.length > 0 ? parts[0] : "");
 					}
 				}
-				else if (s.equals("$SITO.X")) 
-					map.put(s, Utils.formatDouble(site.getPosition().getX(), 1));
-				else if (s.equals("$SITO.Y")) 
-					map.put(s, Utils.formatDouble(site.getPosition().getY(), 1));
-				else if (s.equals("$SITO.Z")) 
-					map.put(s, Utils.formatDouble(site.getPosition().getZ(), 2));
-				else if (s.equals("$RICONFIGURA.ID")) {
+				else if (s.startsWith("$SITO.X")) 
+					map.put("$SITO.X", Utils.formatDouble(site.getPosition().getX(), 1));
+				else if (s.startsWith("$SITO.Y")) 
+					map.put("$SITO.Y", Utils.formatDouble(site.getPosition().getY(), 1));
+				else if (s.startsWith("$SITO.Z")) 
+					map.put("$SITO.Z", Utils.formatDouble(site.getPosition().getZ(), 2));
+				else if (s.startsWith("$RICONFIGURA.ID")) {
 					final String[] parts = site.getDbinfo().getNote().split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
 					
 					boolean found = false;
@@ -254,7 +254,7 @@ public class MainWindow extends JFrame {
 						}
 					
 					if (!found)
-						map.put(s, "");
+						map.put("$RICONFIGURA.ID", "");
 				}
 				else if (s.startsWith("$PIC.")) {
 					final String[] parts = s.split("\\.");
@@ -594,11 +594,26 @@ public class MainWindow extends JFrame {
 						if (text == null || text.isEmpty())
 							continue;
 						
-						for (String key : subst.keySet())
-							if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key)) {
-								final String value = subst.get(key);
-								text = text.replace(key, value != null ? value : "");
+						for (String key : subst.keySet()) {
+							final int pos = text.indexOf(key);
+							
+							if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && pos >= 0) {
+								String value = subst.get(key);
+								if (value == null)
+									value = "";
+								
+								final int mod_pos = pos + key.length();
+								
+								if (text.indexOf(":upcase", pos) == mod_pos)
+									text = text.replace(key + ":upcase", value.toUpperCase());
+								else if (text.indexOf(":lowcase", pos) == mod_pos)
+									text = text.replace(key + ":lowcase", value.toLowerCase());
+								else if (text.indexOf(":capitalize", pos) == mod_pos)
+									text = text.replace(key + ":capitalize", Utils.capitalize(value));
+								else
+									text = text.replace(key, value);
 							}
+						}
 						
 						r.setText(text, 0);
 					}
