@@ -277,7 +277,6 @@ public class MainWindow extends JFrame {
 		return map;
 	}
 	
-	
 	private static List<String> getFilesOfType(String dirname, String[] valid_exts) {
 		final File dir = new File(dirname);
 		final String[] names = dir.list();
@@ -348,7 +347,6 @@ public class MainWindow extends JFrame {
 		return "";
 	}
 	
-	
 	private static String adjustDate(String data_proto_out) {
 		try {
 			final String r = data_proto_out.replaceFirst("00:00:00.0", "").trim();
@@ -358,7 +356,6 @@ public class MainWindow extends JFrame {
 			return data_proto_out;
 		}
 	}
-
 	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();
@@ -469,7 +466,7 @@ public class MainWindow extends JFrame {
 		// TABLE REPLACE
 		{
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.PREESISTENTI");
-			if (tables.size() != 1)
+			if (tables.size() > 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.PREESISTENTI", "WARNING");
 			
 			for (XWPFTable table : tables) {
@@ -490,7 +487,7 @@ public class MainWindow extends JFrame {
 		
 		{
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.MISURE");
-			if (tables.size() != 1)
+			if (tables.size() > 1)
 				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.MISURE", "WARNING");
 			
 			final String measure_filename = subst.get("$TABELLA.MISURE");
@@ -516,15 +513,13 @@ public class MainWindow extends JFrame {
 								config.getOrDefault(Integer.class, "Font.misure.size", 10),
 								measures.get(i),
 								new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.LEFT, ParagraphAlignment.CENTER, 
-															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER
-															, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
+															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER,
+															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
 				}
 		}
 
 		{
 			final List<XWPFTable> tables = UtilsOffice.getTable(hdoc, "$TABELLA.RADIOELETTRICA");
-			if (tables.size() == 0)
-				Utils.MessageBox("There are "+tables.size()+"\n$TABELLA.RADIOELETTRICA", "WARNING");
 			
 			final String radioelettrica_filename = subst.get("$TABELLA.RADIOELETTRICA");
 			List<String[]> radioelt = null;
@@ -593,70 +588,50 @@ public class MainWindow extends JFrame {
 	}
 	
 	private void replace(CustomXWPFDocument hdoc, List<XWPFParagraph> paragraphs, Map<String, String> subst) {
-		for (XWPFParagraph p : paragraphs) {
-			if (p == null)
-				continue;
-			
-		    final List<XWPFRun> runs = p.getRuns();
-		    if (runs == null)
-		    	continue;
-		    
-		    // NORMAL TEXT REPLACE
-			for (XWPFRun r : runs) {
-				if (r == null)
-					continue;
-				
-				String text = r.getText(0);
-				if (text == null || text.isEmpty())
-					continue;
-				
-				for (String key : subst.keySet())
-					if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key)) {
-						final String value = subst.get(key);
-						text = text.replace(key, value != null ? value : "");
+		for (XWPFParagraph p : paragraphs)
+			if (p != null) {
+			    final List<XWPFRun> runs = p.getRuns();
+			    if (runs != null) {
+				    // NORMAL TEXT REPLACE
+					for (XWPFRun r : runs) {
+						if (r == null)
+							continue;
+						
+						String text = r.getText(0);
+						if (text == null || text.isEmpty())
+							continue;
+						
+						for (String key : subst.keySet())
+							if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && text.contains(key)) {
+								final String value = subst.get(key);
+								text = text.replace(key, value != null ? value : "");
+							}
+						
+						r.setText(text, 0);
 					}
-				
-				r.setText(text, 0);
-			}
-			
-			// PIC REPLACE
-			for (XWPFRun r : runs) {
-				if (r == null)
-					continue;
-				
-				String text = r.getText(0);
-				if (text == null || text.isEmpty())
-					continue;
-				
-				for (String key : subst.keySet())
-					if (key.startsWith("$PIC") && text.contains(key)) {
-						r.setText("", 0);
-						
-						FileInputStream is = null;
-						final String picFilename = subst.get(key);
-						try {
-							is = new FileInputStream(picFilename);
+					
+					// PIC REPLACE
+					for (XWPFRun r : runs)
+						if (r != null) {
+							String text = r.getText(0);
+							if (text == null || text.isEmpty())
+								continue;
 							
-							// http://stackoverflow.com/questions/17745466/insert-picture-in-word-document
-							final int format = UtilsOffice.getPictureFormat(picFilename);
-							final String id = hdoc.addPictureData(is, format);
-							hdoc.createPicture(r, id, hdoc.getNextPicNameNumber(format),
-									config.get(Integer.class, "Image.width"), config.get(Integer.class, "Image.height"));
-							
-//							r.addPicture(is, format, picFilename,
-//									Units.toEMU((double) config.get(Integer.class, "Image.width")),
-//									Units.toEMU((double) config.get(Integer.class, "Image.height")));
-						}
-						catch (Exception e) {
-							Utils.MessageBox("Couldn't add pic:\n"+picFilename, "ERROR");
-						}
-						finally {
-							if (is != null)
-								try { is.close(); }
-								catch (Exception e2) {}
-						}
-						
-						break;
+							for (String key : subst.keySet())
+								if (key.startsWith("$PIC") && text.contains(key)) {
+									r.setText("", 0);
+									
+									final String picFilename = subst.get(key);
+									
+									try {
+										hdoc.createCustomPicture(r, picFilename, config.get(Integer.class, "Image.width"), config.get(Integer.class, "Image.height"));
+									}
+									catch (Exception e) {
+										Utils.MessageBox("Couldn't add pic:\n"+picFilename, "ERROR");
+									}
+									
+									break;
+								}
 					}
 			}
 		}

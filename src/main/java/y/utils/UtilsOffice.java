@@ -11,7 +11,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
@@ -293,23 +292,5 @@ public class UtilsOffice {
 		}
 		
 		return ret;		
-	}
-	
-	public static int getPictureFormat(String imgFile) {
-		imgFile = imgFile.toLowerCase();
-		
-        if (imgFile.endsWith(".emf")) return XWPFDocument.PICTURE_TYPE_EMF;
-        else if(imgFile.endsWith(".wmf")) return XWPFDocument.PICTURE_TYPE_WMF;
-        else if(imgFile.endsWith(".pict")) return XWPFDocument.PICTURE_TYPE_PICT;
-        else if(imgFile.endsWith(".jpeg") || imgFile.endsWith(".jpg")) return XWPFDocument.PICTURE_TYPE_JPEG;
-        else if(imgFile.endsWith(".png")) return XWPFDocument.PICTURE_TYPE_PNG;
-        else if(imgFile.endsWith(".dib")) return XWPFDocument.PICTURE_TYPE_DIB;
-        else if(imgFile.endsWith(".gif")) return XWPFDocument.PICTURE_TYPE_GIF;
-        else if(imgFile.endsWith(".tiff")) return XWPFDocument.PICTURE_TYPE_TIFF;
-        else if(imgFile.endsWith(".eps")) return XWPFDocument.PICTURE_TYPE_EPS;
-        else if(imgFile.endsWith(".bmp")) return XWPFDocument.PICTURE_TYPE_BMP;
-        else if(imgFile.endsWith(".wpg")) return XWPFDocument.PICTURE_TYPE_WPG;
-        
-        return -1;
 	}
 }

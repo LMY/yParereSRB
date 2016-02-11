@@ -8,6 +8,7 @@ import org.openxmlformats.schemas.drawingml.x2006.main.CTNonVisualDrawingProps;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTPositiveSize2D;
 import org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing.CTInline;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,7 +20,30 @@ public class CustomXWPFDocument extends XWPFDocument
         super(in);
     }
 
-    public void createPicture(XWPFRun run, String blipId, int id, int width, int height)
+    public void createCustomPicture(XWPFRun run, String picFilename, int width, int height) throws Exception
+    {
+		final int format = getPictureFormat(picFilename);
+
+		FileInputStream is = null;
+		try {
+			is = new FileInputStream(picFilename);
+			final String id = addPictureData(is, format);
+			// http://stackoverflow.com/questions/17745466/insert-picture-in-word-document
+			createPicture(run, id, getNextPicNameNumber(format), width, height);
+			
+//			r.addPicture(is, format, picFilename,
+//							Units.toEMU((double) config.get(Integer.class, "Image.width")),
+//							Units.toEMU((double) config.get(Integer.class, "Image.height")));
+		}
+		finally {
+			if (is != null)
+				try { is.close(); }
+				catch (Exception e2) {}
+		}
+    }
+    
+    
+    private void createPicture(XWPFRun run, String blipId, int id, int width, int height)
     {
         final int EMU = 9525;
         width *= EMU;
@@ -82,4 +106,22 @@ public class CustomXWPFDocument extends XWPFDocument
         docPr.setName("Picture " + id);
         docPr.setDescr("Generated");
     }
+    
+	public static int getPictureFormat(String imgFile) {
+		imgFile = imgFile.toLowerCase();
+		
+        if (imgFile.endsWith(".emf")) return XWPFDocument.PICTURE_TYPE_EMF;
+        else if(imgFile.endsWith(".wmf")) return XWPFDocument.PICTURE_TYPE_WMF;
+        else if(imgFile.endsWith(".pict")) return XWPFDocument.PICTURE_TYPE_PICT;
+        else if(imgFile.endsWith(".jpeg") || imgFile.endsWith(".jpg")) return XWPFDocument.PICTURE_TYPE_JPEG;
+        else if(imgFile.endsWith(".png")) return XWPFDocument.PICTURE_TYPE_PNG;
+        else if(imgFile.endsWith(".dib")) return XWPFDocument.PICTURE_TYPE_DIB;
+        else if(imgFile.endsWith(".gif")) return XWPFDocument.PICTURE_TYPE_GIF;
+        else if(imgFile.endsWith(".tiff")) return XWPFDocument.PICTURE_TYPE_TIFF;
+        else if(imgFile.endsWith(".eps")) return XWPFDocument.PICTURE_TYPE_EPS;
+        else if(imgFile.endsWith(".bmp")) return XWPFDocument.PICTURE_TYPE_BMP;
+        else if(imgFile.endsWith(".wpg")) return XWPFDocument.PICTURE_TYPE_WPG;
+        
+        return -1;
+	}
 }
