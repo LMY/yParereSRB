@@ -6,8 +6,8 @@ apply plugin: 'eclipse'
 mainClassName = "y.yParereSRB"
 version = '0.01-build' + getDate()
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
 
 def getDate() {
     def date = new Date()

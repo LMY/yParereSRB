@@ -35,7 +35,7 @@ public class yParereSRB {
 //		final Config config = Config.read();
 		GeneralProperties<String> config = null;
 		try {
-			config = GeneralPropertiesExporter.read(CONFIG_FILENAME, p -> { return p; });
+			config = GeneralPropertiesExporter.read(CONFIG_FILENAME);
 		} catch (Exception e) {
 			Utils.MessageBox(CONFIG_FILENAME+" doesn't exist", "WARNING");
 		}

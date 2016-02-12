@@ -2,7 +2,6 @@ package y.utils;
 
 import java.io.File;
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,7 +24,8 @@ public class GeneralPropertiesExporter {
 	public final static String TAG_VALUE = "value";
 	public final static String TAG_TYPE = "type";
 	
-	public static <KeyType> GeneralProperties<KeyType> read(String filename, Function<String, KeyType> converter) throws Exception {
+	@SuppressWarnings("unchecked")
+	public static <KeyType> GeneralProperties<KeyType> read(String filename) throws Exception {
 		final File file = new File(filename);
 		final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		final DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -60,7 +60,7 @@ public class GeneralPropertiesExporter {
 					if (attr_name.equals(TAG_TYPE))
 						type = attr_value;
 					else if (attr_name.equals(TAG_KEY))
-						key = converter.apply(attr_value);
+						key = (KeyType) attr_value;
 					else if (attr_name.equals(TAG_VALUE))
 						value = attr_value;
 				}
