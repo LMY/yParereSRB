@@ -114,6 +114,7 @@ public class MainWindow extends JFrame {
 		goButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				substTable.clear();
 				readTemplates();
 				enablePanels();
 			}
@@ -145,15 +146,9 @@ public class MainWindow extends JFrame {
 	}
 	
 	private void enablePanels() {
-		Utils.enableComponents(phase0panel, current_project == null);
-		
 		substTable.setEnabled(current_project != null);
-		if (current_project == null)
-			substTable.clear();
-		
 		go2Button.setEnabled(current_project != null);
 	}
-	
 	
 	
 	// phase 1
@@ -166,15 +161,16 @@ public class MainWindow extends JFrame {
 			
 			// read project
 			final String yemFilename = yemFile.getText();
-			if (yemFilename == null || yemFilename.isEmpty())
-				throw new Exception("yEM filename is empty");
+			if (yemFilename == null || yemFilename.isEmpty()) {
+				current_project = new Project();
+			}
+			else {
+				current_project = ProjectExporterProvider.importProject(yemFilename);
+				if (current_project == null || current_project.getSites() == null || current_project.getSites().length == 0)
+					throw new Exception("Empty project");
 			
-			current_project = ProjectExporterProvider.importProject(yemFilename);
-			if (current_project == null || current_project.getSites() == null || current_project.getSites().length == 0)
-				throw new Exception("Empty project");
-		
+			}
 			substTable.update(fillInDefaults(fields));
-			
 			return true;
 		}
 		catch (Exception e) {
