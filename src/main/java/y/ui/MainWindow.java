@@ -399,7 +399,7 @@ public class MainWindow extends JFrame {
 				
 				final String[] parts = text.split(UtilsOffice.REGEXP_SPACES_AND_STUFF);
 				for (String word : parts)
-					if (word.startsWith("$"))
+					if (word.length() > 1 && word.startsWith("$"))
 						ret.add(word);
 			}
 		}
