@@ -67,6 +67,27 @@ public class AddressBook {
 		return best;
 	}
 	
+	public String getStartingName(String name) {
+		
+		if (Utils.IsNullOrEmpty(name))
+			return "";
+		
+		int max = Integer.MIN_VALUE;
+		String best = "";
+		
+		name = name.toLowerCase();
+		
+		for (String s : emails.keySet()) {
+			final int cur = StartingDistance(s.toLowerCase(), name);
+			
+			if (max == Integer.MIN_VALUE || cur > max) {
+				max = cur;
+				best = s;
+			}
+		}
+		
+		return best;
+	}
 	
 	public final static String DEFAULT_FILENAME = "addresses.xml";
 	
@@ -192,8 +213,8 @@ public class AddressBook {
 		
 	    // degenerate cases
 	    if (s == t) return 0;
-	    if (s.length() == 0) return tlen;
-	    if (t.length() == 0) return slen;
+	    if (slen == 0) return tlen;
+	    if (tlen == 0) return slen;
 
 	    // create two work vectors of integer distances
 	    // LMY: reallocate only when not big enough
@@ -232,5 +253,19 @@ public class AddressBook {
 	    }
 
 	    return levenshtein_v1[tlen];
+	}
+	
+	public static int StartingDistance(String s, String t) {
+		final int slen = s.length();
+		final int tlen = t.length();
+		final int minlen = Math.min(slen, tlen);
+		
+	    if (minlen == 0) return 0;
+	    
+	    for (int i=0; i<minlen; i++)
+	    	if (s.charAt(i) != t.charAt(i))
+	    		return i;
+	    
+	    return minlen;
 	}
 }

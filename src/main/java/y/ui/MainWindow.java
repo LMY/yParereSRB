@@ -62,7 +62,7 @@ public class MainWindow extends JFrame {
 	private final String TEMPLATE_FILENAME;
 	
 	private final JTextField templateFile;
-	private final JTextField yemFile;
+	private final JTextField yemFile;		// do not .getText(), use getYemFile() instead
 	
 	private final JPanel phase0panel;
 	
@@ -111,7 +111,7 @@ public class MainWindow extends JFrame {
 			phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
 		}
 		
-		final JButton goButton = new JButton("Read yEm");
+		final JButton goButton = new JButton("Read template");
 		goButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -211,8 +211,9 @@ public class MainWindow extends JFrame {
 				}
 				else if (s.startsWith("$GESTORE.NOME")) {
 					final String mem_gestore = site.getDbinfo().getOperatore();
-					map.put("$GESTORE.NOME", mem_gestore);
-					map.put("$GESTORE.EMAIL", book.getEmail(book.getCloserName(mem_gestore)));
+					final String closer_gestore = book.getStartingName(mem_gestore);
+					map.put("$GESTORE.NOME", closer_gestore);
+					map.put("$GESTORE.EMAIL", book.getEmail(closer_gestore));
 				}
 				else if (s.startsWith("$STUDIOTECNICO.NOME")) {
 					final String mem_gestore = "";
@@ -424,13 +425,13 @@ public class MainWindow extends JFrame {
 				return false;
 			}
 			
-			// check if file exists
-			if (new File(outfilename).exists() && !Utils.MessageBoxYesNo(this, "File\n"+outfilename+"\nexists. Overwrite?", "Confirm overwrite"))
-				return false;
-			
 			// append ".docx" if user does not specify extension
 			if (!outfilename.toLowerCase().endsWith("doc") && !outfilename.toLowerCase().endsWith("docx"))
 				outfilename += ".docx";
+			
+			// check if file exists
+			if (new File(outfilename).exists() && !Utils.MessageBoxYesNo(this, "File\n"+outfilename+"\nexists. Overwrite?", "Confirm overwrite"))
+				return false;
 			
 			if (doWriteResult(wpf_document, substTable.getMap(), outfilename)) {
 				Utils.MessageBox("Done!", "OK");
@@ -493,27 +494,28 @@ public class MainWindow extends JFrame {
 			
 			final String measure_filename = subst.get("$TABELLA.MISURE");
 			
-			try {
-				final List<String[]> measures = UtilsOffice.getMeasureValue(measure_filename);
-				for (XWPFTable table : tables) {
-					final List<XWPFTableRow> rows = table.getRows(); 
-	
-					while (rows.size() > 2)	
-						table.removeRow(2);
-					
-					for (int i=1; i<measures.size(); i++)
-						UtilsOffice.putTextInRow(table.createRow(),
-								config.getOrDefault(String.class, "Font.misure.name", "Garamond"),
-								config.getOrDefault(Integer.class, "Font.misure.size", 10),
-								measures.get(i),
-								new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.LEFT, ParagraphAlignment.CENTER, 
-															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER,
-															ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
+			if (measure_filename != null && !measure_filename.isEmpty())
+				try {
+					final List<String[]> measures = UtilsOffice.getMeasureValue(measure_filename);
+					for (XWPFTable table : tables) {
+						final List<XWPFTableRow> rows = table.getRows(); 
+		
+						while (rows.size() > 2)	
+							table.removeRow(2);
+						
+						for (int i=1; i<measures.size(); i++)
+							UtilsOffice.putTextInRow(table.createRow(),
+									config.getOrDefault(String.class, "Font.misure.name", "Garamond"),
+									config.getOrDefault(Integer.class, "Font.misure.size", 10),
+									measures.get(i),
+									new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.LEFT, ParagraphAlignment.CENTER, 
+																ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.CENTER,
+																ParagraphAlignment.CENTER, ParagraphAlignment.CENTER });
+					}
 				}
-			}
-			catch (Exception e) {
-				Utils.MessageBox("Cannot read measure filename:\n"+measure_filename, "ERROR");
-			}
+				catch (Exception e) {
+					Utils.MessageBox("Cannot read measure filename:\n"+measure_filename, "ERROR");
+				}
 		}
 
 		{
@@ -521,46 +523,47 @@ public class MainWindow extends JFrame {
 			
 			final String radioelettrica_filename = subst.get("$TABELLA.RADIOELETTRICA");
 			
-			try {
-				final List<String[]> radioelt = UtilsOffice.getRadioelettrica(radioelettrica_filename);
-				int k=5;	// moving in radioelt
-				
-				for (int i=0, imax=tables.size(); i<imax; i++) {
-					final XWPFTable table = tables.get(i);
-					final List<XWPFTableRow> rows = table.getRows(); 
-	
-					while (rows.size() > 1)	
-						table.removeRow(1);
+			if (radioelettrica_filename != null && !radioelettrica_filename.isEmpty())
+				try {
+					final List<String[]> radioelt = UtilsOffice.getRadioelettrica(radioelettrica_filename);
+					int k=5;	// moving in radioelt
 					
-					++k; // skip first table line
-					
-					if (!((k < radioelt.size() && radioelt.get(k).length > 0))) { // no such line
-						int position = hdoc.getPosOfTable(table);
-						hdoc.removeBodyElement(position);
-						hdoc.removeBodyElement(position); // table caption
-						// remove table
-					}
-					else {
-						// put data in table
-						int lineoftable=0;
+					for (int i=0, imax=tables.size(); i<imax; i++) {
+						final XWPFTable table = tables.get(i);
+						final List<XWPFTableRow> rows = table.getRows(); 
+		
+						while (rows.size() > 1)	
+							table.removeRow(1);
 						
-						while (k < radioelt.size() && radioelt.get(k).length > 0) {
-							UtilsOffice.putTextInRowIntest(table.createRow(),
-									config.getOrDefault(String.class, "Font.radioelettriche.name", "Garamond"),
-									config.getOrDefault(Integer.class, "Font.radioelettriche.size", 10),
-									UtilsOffice.formatIntestRow(radioelt.get(k), lineoftable++), ParagraphAlignment.CENTER);
-									
-							++k;
+						++k; // skip first table line
+						
+						if (!((k < radioelt.size() && radioelt.get(k).length > 0))) { // no such line
+							int position = hdoc.getPosOfTable(table);
+							hdoc.removeBodyElement(position);
+							hdoc.removeBodyElement(position); // table caption
+							// remove table
 						}
+						else {
+							// put data in table
+							int lineoftable=0;
+							
+							while (k < radioelt.size() && radioelt.get(k).length > 0) {
+								UtilsOffice.putTextInRowIntest(table.createRow(),
+										config.getOrDefault(String.class, "Font.radioelettriche.name", "Garamond"),
+										config.getOrDefault(Integer.class, "Font.radioelettriche.size", 10),
+										UtilsOffice.formatIntestRow(radioelt.get(k), lineoftable++), ParagraphAlignment.CENTER);
+										
+								++k;
+							}
+						}
+						
+						++k; // skip bottom empty line
 					}
-					
-					++k; // skip bottom empty line
+				}
+				catch (Exception e) {
+					Utils.MessageBox("Cannot read radioelt filename:\n"+radioelettrica_filename, "ERROR");
 				}
 			}
-			catch (Exception e) {
-				Utils.MessageBox("Cannot read measure filename:\n"+radioelettrica_filename, "ERROR");
-			}
-		}
 		
 		FileOutputStream fo = null;
 		
@@ -595,10 +598,14 @@ public class MainWindow extends JFrame {
 						if (text == null || text.isEmpty())
 							continue;
 						
+						boolean modified = false;
+						
 						for (String key : subst.keySet()) {
 							final int pos = text.indexOf(key);
 							
 							if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && pos >= 0) {
+								modified = true;
+								
 								String value = subst.get(key);
 								if (value == null)
 									value = "";
@@ -616,7 +623,8 @@ public class MainWindow extends JFrame {
 							}
 						}
 						
-						r.setText(text, 0);
+						if (modified)
+							r.setText(text, 0);
 					}
 					
 					// PIC REPLACE
