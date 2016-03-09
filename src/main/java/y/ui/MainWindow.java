@@ -105,10 +105,11 @@ public class MainWindow extends JFrame {
 		templateFile = new JTextField(TEMPLATE_FILENAME);
 		phase0panelC.add(Utils.createOpenFileTextField(this, templateFile, "template file", "docx"));
 		
-		phase0panelC.add(new JLabel(" yEM Filename:"));
 		yemFile = new JTextField(config.getOrDefault(String.class, "startYEMFile", ""));
-		phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
-		
+		if (config.getOrDefault(Boolean.class, "enableYEMFile", true)) {
+			phase0panelC.add(new JLabel(" yEM Filename:"));
+			phase0panelC.add(Utils.createOpenFileTextField(this, yemFile, "yEM file", "yem"));
+		}
 		
 		final JButton goButton = new JButton("Read yEm");
 		goButton.addActionListener(new ActionListener() {
@@ -150,6 +151,10 @@ public class MainWindow extends JFrame {
 		go2Button.setEnabled(current_project != null);
 	}
 	
+	private String getYemFile() {
+		return config.getOrDefault(Boolean.class, "enableYEMFile", true) ? yemFile.getText() : "";
+	}
+	
 	
 	// phase 1
 	
@@ -160,7 +165,7 @@ public class MainWindow extends JFrame {
 			final Set<String> fields = getTemplateFields(wpf_document);
 			
 			// read project
-			final String yemFilename = yemFile.getText();
+			final String yemFilename = getYemFile();
 			if (yemFilename == null || yemFilename.isEmpty()) {
 				current_project = new Project();
 			}
@@ -295,7 +300,7 @@ public class MainWindow extends JFrame {
 	private static String[] EXTENSIONS_TABLE = { "xlsx", "xls" };
 	
 	private String getPic(String name) {
-		final List<String> pics = getFilesOfType(Utils.getFolderOfFile(yemFile.getText()) + File.separator, EXTENSIONS_PIC);
+		final List<String> pics = getFilesOfType(Utils.getFolderOfFile(getYemFile()) + File.separator, EXTENSIONS_PIC);
 		
 		for (String s : pics) {
 			final String lowS = Utils.getFilenameOfFile(s).toLowerCase();
@@ -322,7 +327,7 @@ public class MainWindow extends JFrame {
 	}
 	
 	private String getTable(String name) {
-		final List<String> tables = getFilesOfType(Utils.getFolderOfFile(yemFile.getText()) + File.separator, EXTENSIONS_TABLE);
+		final List<String> tables = getFilesOfType(Utils.getFolderOfFile(getYemFile()) + File.separator, EXTENSIONS_TABLE);
 		
 		for (String s : tables) {
 			final String lowS = Utils.getFilenameOfFile(s).toLowerCase();
