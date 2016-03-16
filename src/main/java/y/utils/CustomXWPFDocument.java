@@ -28,12 +28,10 @@ public class CustomXWPFDocument extends XWPFDocument
 		try {
 			is = new FileInputStream(picFilename);
 			final String id = addPictureData(is, format);
-			// http://stackoverflow.com/questions/17745466/insert-picture-in-word-document
 			createPicture(run, id, getNextPicNameNumber(format), width, height);
-			
-//			r.addPicture(is, format, picFilename,
-//							Units.toEMU((double) config.get(Integer.class, "Image.width")),
-//							Units.toEMU((double) config.get(Integer.class, "Image.height")));
+	
+			// doesn't work, as for poi 3.14
+//			run.addPicture(is, format, picFilename, width, height);
 		}
 		finally {
 			if (is != null)
