@@ -481,7 +481,7 @@ public class MainWindow extends JFrame {
 				for (int i=1; i<preesistenti.length; i++)
 					UtilsOffice.putTextInRow(table.createRow(),
 							config.getOrDefault(String.class, "Font.preesistenti.name", "Garamond"),
-							config.getOrDefault(Integer.class, "Font.preesistenti.size", 12),
+							config.getOrDefault(Integer.class, "Font.preesistenti.size", 11),
 							new String[] { preesistenti[i].getID(), preesistenti[i].getDbinfo().getOperatore(), preesistenti[i].getDbinfo().getIndirizzo() },
 							new ParagraphAlignment[] { ParagraphAlignment.CENTER, ParagraphAlignment.CENTER, ParagraphAlignment.LEFT });
 			}

@@ -111,9 +111,9 @@ public class UtilsOffice {
 				if (rown == 1 || rown == 2)	// 1 dec. coordinates
 					ret[i] = ""+ Utils.formatDouble(Double.parseDouble(strings[i]), 1);
 				else if (rown == 5)	// 2 dec. height
-					ret[i] = ""+ Utils.formatDouble(Double.parseDouble(strings[i]), 1);
+					ret[i] = ""+ Utils.formatDouble(Double.parseDouble(strings[i]), 2);
 				else if (rown == 0 || rown == 4 || rown == 6 || rown == 7 || rown == 8 || rown == 9 || rown == 10)
-					ret[i] = ""+ Utils.formatDoubleAsNeeded(Double.parseDouble(strings[i]), 1);
+					ret[i] = ""+ Utils.formatDoubleAsNeeded(Double.parseDouble(strings[i]));
 				else 
 					ret[i] = strings[i];
 			}
