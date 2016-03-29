@@ -125,7 +125,7 @@ public class MainWindow extends JFrame {
 		phase0panel.add(goButton, BorderLayout.SOUTH);
 		
 		
-		substTable = new JHashTable();
+		substTable = new JHashTable(new JHashTableModelAddressBook(book));
 		
 		go2Button = new JButton("Write");
 		go2Button.addActionListener(new ActionListener() {
