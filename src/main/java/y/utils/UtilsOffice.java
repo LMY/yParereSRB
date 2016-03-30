@@ -22,7 +22,7 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 public class UtilsOffice {
 
-	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/]+";
+	public final static String REGEXP_SPACES_AND_STUFF = "[\\s)(\\,\\/\\-]+";
 	
 	public static void putTextInRow(XWPFTableRow row, String fontname, int fontsize, String[] strings) {
 		putTextInRow(row, fontname, fontsize, strings, (ParagraphAlignment)null);

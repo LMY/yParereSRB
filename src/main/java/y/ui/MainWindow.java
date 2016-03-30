@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +26,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
-import org.apache.poi.xwpf.usermodel.IRunElement;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
@@ -35,7 +35,6 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 
 import y.yParereSRB;
 import y.em.Project;
@@ -409,19 +408,20 @@ public class MainWindow extends JFrame {
 			if (current == null)
 				continue;
 			
-			// if they have the same style
-			if (UtilsOffice.haveSameStyle(current, prev)) {
+			// if they have the same style (or prev is invalid)
+			if (prev != null && UtilsOffice.haveSameStyle(current, prev)) {
 				final String current_text =  current.getText(0);
 				
-				if (prev.getText(0).contains("cautelativo"))
-					System.out.println(prev.getText(0) + "|"+ current_text);
-				
-				// merge them into the same (prev) run
-				// p.removeRun(i) causes XmlValueDisconnectedException on XWPFRun.getText(0).
-				// workaround: append to prev, clear current.text
-				if (!Utils.IsNullOrEmpty(current_text))
-					prev.setText(prev.getText(0) + current_text, 0);
-				current.setText("", 0);
+				if (current_text == null)	// some runs contain formulas or objects, they have null text. skip them!
+					prev = null;			// ignore this run, next run will be set =prev
+				else {
+					// merge them into the same (prev) run
+					// p.removeRun(i) causes XmlValueDisconnectedException on XWPFRun.getText(0).
+					// workaround: append to prev, clear current.text
+					if (!Utils.IsNullOrEmpty(current_text))
+						prev.setText(prev.getText(0) + current_text, 0);
+					current.setText("", 0);
+				}
 			}
 			else
 				// otherwise, go on from this one
