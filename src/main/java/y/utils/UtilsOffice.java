@@ -11,6 +11,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
+import org.apache.poi.xwpf.usermodel.XWPFFieldRun;
+import org.apache.poi.xwpf.usermodel.XWPFHyperlinkRun;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
@@ -293,4 +295,54 @@ public class UtilsOffice {
 		
 		return ret;		
 	}
+	
+	
+	public static boolean haveSameStyle(XWPFRun a, XWPFRun b) {
+		
+		if (a.getFontSize() != b.getFontSize())
+			return false;
+		
+		if (a.isBold() != b.isBold())
+			return false;
+		
+		if (a.isItalic() != b.isItalic())
+			return false;
+		
+		if (a.isStrikeThrough() != b.isStrikeThrough())
+			return false;
+		
+		if (a.isDoubleStrikeThrough() != b.isDoubleStrikeThrough())
+			return false;
+		
+		if (a.isCapitalized() != b.isCapitalized())
+			return false;
+		
+		if (a.isEmbossed() != b.isEmbossed())
+			return false;
+		if (a.isHighlighted() != b.isHighlighted())
+			return false;
+		if (a.isImprinted() != b.isImprinted())
+			return false;
+		if (a.isShadowed() != b.isShadowed())
+			return false;
+		if (a.isSmallCaps() != b.isSmallCaps())
+			return false;
+		
+		if (a.getSubscript() != b.getSubscript())
+			return false;
+		
+		try { if (!a.getFontFamily().equals(b.getFontFamily())) return false; } catch (Exception e) {}
+		try { if (!a.getFontName().equals(b.getFontName())) return false; } catch (Exception e) {}
+		try { if (!a.getColor().equals(b.getColor())) return false; } catch (Exception e) {}
+		try { if (a.getUnderline() != b.getUnderline()) return false; } catch (Exception e) {}
+
+		if ((a instanceof XWPFHyperlinkRun) != (b instanceof XWPFHyperlinkRun))
+			return false;
+		
+		if ((a instanceof XWPFFieldRun) != (b instanceof XWPFFieldRun))
+			return false;
+		
+		return true;
+	}
+
 }

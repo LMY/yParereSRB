@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import org.apache.poi.xwpf.usermodel.IRunElement;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFFooter;
@@ -34,6 +35,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 
 import y.yParereSRB;
 import y.em.Project;
@@ -47,7 +49,7 @@ import y.utils.Utils;
 import y.utils.UtilsOffice;
 
 public class MainWindow extends JFrame {
-
+	
 	private static final long serialVersionUID = 1L;
 	public final static double ASPECT_RATIO = 16.0/9.0;
 	public final static int WINDOW_WIDTH = 1100;
@@ -162,6 +164,7 @@ public class MainWindow extends JFrame {
 		try {
 			// read template
 			wpf_document = new CustomXWPFDocument(new FileInputStream(templateFile.getText()));
+			mergeRuns(wpf_document);
 			final Set<String> fields = getTemplateFields(wpf_document);
 			
 			// read project
@@ -180,6 +183,7 @@ public class MainWindow extends JFrame {
 		}
 		catch (Exception e) {
 			current_project = null;
+			e.printStackTrace(System.out);
 			Utils.MessageBox("Error reading project:\n"+e.toString(), "ERROR");
 			return false;
 		}
@@ -359,6 +363,72 @@ public class MainWindow extends JFrame {
 			return data_proto_out;
 		}
 	}
+	
+	/**
+	 * MS Word divides text in A FUCKIN BAD WAY
+	 * @param hdoc
+	 */
+	private static void mergeRuns(XWPFDocument hdoc) {
+		mergeRuns(hdoc.getParagraphs());
+
+		for (XWPFTable tbl : hdoc.getTables())
+			if (tbl != null)
+				for (XWPFTableRow row : tbl.getRows())
+					if (row != null)
+						for (XWPFTableCell cell : row.getTableCells())
+							if (cell != null)
+								mergeRuns(cell.getParagraphs());
+		
+		for (XWPFFooter footer : hdoc.getFooterList())
+			if (footer != null)
+				mergeRuns(footer.getParagraphs());
+		
+		for (XWPFHeader header : hdoc.getHeaderList())
+			if (header != null)
+				mergeRuns(header.getParagraphs());
+	}
+	
+	private static void mergeRuns(List<XWPFParagraph> paragraphs) {
+		for (XWPFParagraph p : paragraphs)
+			if (p != null)
+				mergeRuns(p);
+	}
+	
+	private static void mergeRuns(XWPFParagraph p) {
+		
+		final List<XWPFRun> runs = p.getRuns();
+		
+		if (runs.size() < 1)	// if 0 or 1 run, nothing do merge
+			return;
+		
+		XWPFRun prev = runs.get(0);
+		
+		// compare to all other runs
+		for (int i=1, imax=runs.size(); i<imax; i++) {	// while at least one run
+			final XWPFRun current = runs.get(i);
+			if (current == null)
+				continue;
+			
+			// if they have the same style
+			if (UtilsOffice.haveSameStyle(current, prev)) {
+				final String current_text =  current.getText(0);
+				
+				if (prev.getText(0).contains("cautelativo"))
+					System.out.println(prev.getText(0) + "|"+ current_text);
+				
+				// merge them into the same (prev) run
+				// p.removeRun(i) causes XmlValueDisconnectedException on XWPFRun.getText(0).
+				// workaround: append to prev, clear current.text
+				if (!Utils.IsNullOrEmpty(current_text))
+					prev.setText(prev.getText(0) + current_text, 0);
+				current.setText("", 0);
+			}
+			else
+				// otherwise, go on from this one
+				prev = current;
+		}
+	}
+	
 	
 	private static Set<String> getTemplateFields(XWPFDocument hdoc) {
 		final Set<String> ret = new HashSet<String>();
@@ -584,6 +654,10 @@ public class MainWindow extends JFrame {
 		}
 	}
 	
+	public final static String MOD_UPCASE = ":upcase";
+	public final static String MOD_LOWCASE = ":lowcase";
+	public final static String MOD_CAPITALIZE = ":capitalize";
+	
 	private void replace(CustomXWPFDocument hdoc, List<XWPFParagraph> paragraphs, Map<String, String> subst) {
 		for (XWPFParagraph p : paragraphs)
 			if (p != null) {
@@ -594,16 +668,21 @@ public class MainWindow extends JFrame {
 						if (r == null)
 							continue;
 						
-						String text = r.getText(0);
-						if (text == null || text.isEmpty())
+						final String originalText = r.getText(0);
+						String text = originalText;
+						if (text == null || text.isEmpty()) {
+							if (config.getOrDefault(Boolean.class, "DebugXWPFRunDivisions", false))
+								r.setText("{}");
+							
 							continue;
+						}
 						
 						boolean modified = false;
 						
 						for (String key : subst.keySet()) {
 							final int pos = text.indexOf(key);
 							
-							if (!key.startsWith("$PIC") && !key.startsWith("$TABELLA") && pos >= 0) {
+							if (pos >= 0 && !key.startsWith("$PIC") && !key.startsWith("$TABELLA")) {
 								modified = true;
 								
 								String value = subst.get(key);
@@ -612,18 +691,20 @@ public class MainWindow extends JFrame {
 								
 								final int mod_pos = pos + key.length();
 								
-								if (text.indexOf(":upcase", pos) == mod_pos)
-									text = text.replace(key + ":upcase", value.toUpperCase());
-								else if (text.indexOf(":lowcase", pos) == mod_pos)
-									text = text.replace(key + ":lowcase", value.toLowerCase());
-								else if (text.indexOf(":capitalize", pos) == mod_pos)
-									text = text.replace(key + ":capitalize", Utils.capitalize(value));
+								if (text.indexOf(MOD_UPCASE, pos) == mod_pos)
+									text = text.replace(key + MOD_UPCASE, value.toUpperCase());
+								else if (text.indexOf(MOD_LOWCASE, pos) == mod_pos)
+									text = text.replace(key + MOD_LOWCASE, value.toLowerCase());
+								else if (text.indexOf(MOD_CAPITALIZE, pos) == mod_pos)
+									text = text.replace(key + MOD_CAPITALIZE, Utils.capitalize(value));
 								else
 									text = text.replace(key, value);
 							}
 						}
 						
-						if (modified)
+						if (config.getOrDefault(Boolean.class, "DebugXWPFRunDivisions", false))
+							r.setText("{"+originalText+"}", 0);	// debug: see XWPFRun divisions
+						else if (modified)
 							r.setText(text, 0);
 					}
 					
