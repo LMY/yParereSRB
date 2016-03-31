@@ -4,7 +4,7 @@ apply plugin: 'eclipse'
 
 
 mainClassName = "y.yParereSRB"
-version = '0.01-build' + getDate()
+version = '0.03-build' + getDate()
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
