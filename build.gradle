@@ -20,8 +20,8 @@ repositories {
 }
 
 dependencies {
-	compile 'org.apache.poi:poi:3.14'
-	compile 'org.apache.poi:poi-ooxml:3.14'
+	compile 'org.apache.poi:poi:3.15'
+	compile 'org.apache.poi:poi-ooxml:3.15'
 }
 
 task fatJar(type: Jar) {

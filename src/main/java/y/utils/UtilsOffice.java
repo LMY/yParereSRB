@@ -193,14 +193,14 @@ public class UtilsOffice {
 					
 					String value = "";
 
-					switch (cell.getCellType()) {
-						case Cell.CELL_TYPE_STRING:
+					switch (cell.getCellTypeEnum()) {
+						case STRING:
 							value = cell.getStringCellValue();
 							break;
-						case Cell.CELL_TYPE_NUMERIC:
+						case NUMERIC:
 							value = ""+cell.getNumericCellValue();
 							break;
-						case Cell.CELL_TYPE_BOOLEAN:
+						case BOOLEAN:
 							value = ""+cell.getBooleanCellValue();
 							break;
 						default :
@@ -265,14 +265,14 @@ public class UtilsOffice {
 					
 					String value = "";
 
-					switch (cell.getCellType()) {
-						case Cell.CELL_TYPE_STRING:
+					switch (cell.getCellTypeEnum()) {
+						case STRING:
 							value = cell.getStringCellValue();
 							break;
-						case Cell.CELL_TYPE_NUMERIC:
+						case NUMERIC:
 							value = ""+cell.getNumericCellValue();
 							break;
-						case Cell.CELL_TYPE_BOOLEAN:
+						case BOOLEAN:
 							value = ""+cell.getBooleanCellValue();
 							break;
 						default :
