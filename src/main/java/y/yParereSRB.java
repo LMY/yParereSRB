@@ -12,8 +12,8 @@ import y.utils.GeneralPropertiesExporter;
 import y.utils.Utils;
 
 public class yParereSRB {
-	public static final String ReleaseDate = "2016-08-01";
-	public static final String VersionString = "0.10"; 
+	public static final String ReleaseDate = "2017-04-12";
+	public static final String VersionString = "1.07"; 
 	public static final String VersionDateString = VersionString + " (" + ReleaseDate + ")"; 
 	
 	public static final String CONFIG_FILENAME = "yParereSRB.xml";
